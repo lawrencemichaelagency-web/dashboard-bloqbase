@@ -2,9 +2,9 @@ import { google } from "googleapis";
 import type { LeadProspeccion } from "./types";
 
 const SHEET_IDS = {
-  linkedin: "18dKDAmg...", // reemplazar con el ID real confirmado en Task 6 Step 1
-  partners: "1hh8O5RK...",
-  subvenciones: "10C0BWxK...",
+  linkedin: "10cd7J-eTxuSkVesO2Jg0HmeecKzO8yfBG0EmbHjbZIE",
+  partners: "1hAmRjkgxUplEPIkIHClGnlISwYlh41reQZzdYI_IWBY",
+  subvenciones: "1hh8O5RKvoO2fRP7eGvpqHAAHEcprJrLWtjwdWt9XQvw",
 } as const;
 
 function getAuth() {
@@ -49,9 +49,9 @@ export function normalizeProspeccionRows(input: {
 
 export async function fetchProspeccionSnapshot(): Promise<LeadProspeccion[]> {
   const [linkedin, partners, subvenciones] = await Promise.all([
-    readSheetValues(SHEET_IDS.linkedin, "A1:Z200"),
-    readSheetValues(SHEET_IDS.partners, "A1:Z200"),
-    readSheetValues(SHEET_IDS.subvenciones, "A1:Z200"),
+    readSheetValues(SHEET_IDS.linkedin, "Prospección!A1:L5000"),
+    readSheetValues(SHEET_IDS.partners, "'Partnerships - Aliados'!A1:M2000"),
+    readSheetValues(SHEET_IDS.subvenciones, "Ayudas!A1:Z5000"),
   ]);
   return normalizeProspeccionRows({ linkedin, partners, subvenciones });
 }
