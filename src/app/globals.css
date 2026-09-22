@@ -1,0 +1,19 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root{
+  --grafito:#1A1A18; --naranja:#FF2C00; --naranja-hover:#E62800; --naranja-texto:#CC2300;
+  --amarillo:#F5B700; --amarillo-texto:#8A6800; --teal:#16A085; --teal-texto:#0F7A66;
+  --lienzo:#EDEDEB; --tarjeta:#FCFCFB; --hairline:#E3E3E1; --separador:#EEEEEF;
+  --borde-input:#E4E4E6; --borde-boton:#DEDEDC; --chip:#F2F2F0; --disabled:#DCDCDA;
+  --mono:'Space Mono',monospace; --display:'Space Grotesk',sans-serif; --sans:Inter,sans-serif;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--lienzo);color:var(--grafito);font-family:var(--sans);-webkit-font-smoothing:antialiased;
+  background-image:linear-gradient(rgba(26,26,24,0.05) 1px,transparent 1px),linear-gradient(90deg,rgba(26,26,24,0.05) 1px,transparent 1px);
+  background-size:56px 56px;}
+a{color:var(--naranja)}
+a:hover{color:var(--naranja-texto)}
+::selection{background:var(--naranja);color:#fff}
+@keyframes bq-blink{0%,49%{opacity:1}50%,100%{opacity:0}}
