@@ -1,58 +1,132 @@
 import type postgres from "postgres";
-import type { MarketingSnapshot, MarketingOportunidad, MarketingRedSocial } from "./types";
+import type { MarketingSnapshot, MarketingOportunidad, MarketingRedSocial, SerieRedSocialPunto } from "./types";
+import { getSqlDataRead } from "@/core/lib/db";
+import { analyzeMarketingData } from "./ai-analyzer";
 
 type Sql = ReturnType<typeof postgres>;
 
-export async function buildMarketingSnapshot(sql: Sql): Promise<MarketingSnapshot> {
-  const traffic = await sql`
+async function safe<T>(label: string, fn: () => Promise<T[]>): Promise<T[]> {
+  try {
+    return await fn();
+  } catch (err) {
+    console.warn(`[marketing] query failed: ${label}`, err);
+    return [];
+  }
+}
+
+export async function buildMarketingSnapshot(sql?: Sql): Promise<MarketingSnapshot> {
+  // Use data read connection (live data from EXCELSIUS-CONSTRUYE project)
+  const sqlRead = sql || getSqlDataRead();
+
+  const traffic = await safe("traffic", () => sqlRead`
     select
       coalesce(sum(clicks), 0)::int as clicks_30d,
       coalesce(sum(impressions), 0)::int as impresiones_30d,
       round(avg(position), 2) as posicion_media
     from seo.page_performance_daily
     where fecha >= current_date - interval '30 days'
-  `;
+  `);
 
-  const coverage = await sql`
+  const coverage = await safe("coverage", () => sqlRead`
     select
-      count(*) filter (where http_status between 200 and 299) as publicadas,
+      count(*) filter (where estado = 'LIVE') as publicadas,
       count(*) as total
     from seo.pages
-  `;
+  `);
 
-  const forms = await sql`
+  const forms = await safe("forms", () => sqlRead`
     select
       coalesce(sum(form_starts), 0)::int as iniciados,
       coalesce(sum(form_submits), 0)::int as completados
     from seo.form_conversions_daily
     where fecha >= current_date - interval '30 days'
-  `;
+  `);
 
-  const opportunities = await sql`
+  const opportunities = await safe("opportunities", () => sqlRead`
     select id, tipo, score, estado, fuente
     from seo.opportunities
     where estado = 'PENDIENTE'
     order by score desc nulls last
     limit 25
-  `;
+  `);
 
-  const spark = await sql`
+  const spark = await safe("spark", () => sqlRead`
     select
       date_trunc('week', fecha) as semana,
       sum(clicks)::int as clicks
     from seo.page_performance_daily
-    where fecha >= current_date - interval '84 days'
     group by 1
     order by 1
-  `;
+  `);
 
-  const social = await sql`
-    select canal, count(*)::int as posts, coalesce(sum(alcance), 0)::int as alcance
-    from social.rendimiento_por_canal_y_categoria
+  const social = await safe("social", () => sqlRead`
+    select
+      canal,
+      metric_name,
+      coalesce(sum(value), 0) as total
+    from social.metricas
+    group by canal, metric_name
+  `);
+
+  const socialPosts = await safe("socialPosts", () => sqlRead`
+    select canal, count(*)::int as posts
+    from social.posts
     group by canal
-  `;
+  `);
 
-  return {
+  const postsPorEstado = await safe("postsPorEstado", () => sqlRead`
+    select estado, count(*)::int as total
+    from social.posts
+    group by estado
+  `);
+
+  const seriesRaw = await safe("seriesRedes", () => sqlRead`
+    select
+      coalesce(fecha_publicacion, fecha) as fecha,
+      canal,
+      metric_name,
+      coalesce(sum(value), 0) as total
+    from social.metricas
+    where coalesce(fecha_publicacion, fecha) >= current_date - interval '90 days'
+    group by coalesce(fecha_publicacion, fecha), canal, metric_name
+    order by 1
+  `);
+
+  const canales = new Map<string, MarketingRedSocial>();
+  for (const row of socialPosts) {
+    canales.set(String(row.canal), {
+      canal: String(row.canal),
+      posts: Number(row.posts),
+      alcance: 0,
+      impresiones: 0,
+      clicks: 0,
+      interacciones: 0,
+    });
+  }
+  for (const row of social) {
+    const canal = String(row.canal);
+    if (!canales.has(canal)) {
+      canales.set(canal, { canal, posts: 0, alcance: 0, impresiones: 0, clicks: 0, interacciones: 0 });
+    }
+    const entry = canales.get(canal)!;
+    const metric = String(row.metric_name);
+    const value = Number(row.total);
+    if (metric === "Reach") entry.alcance += value;
+    else if (metric === "Impressions") entry.impresiones += value;
+    else if (metric === "Clicks") entry.clicks += value;
+    else if (["Reactions", "Comments", "Shares", "Reposts", "Saves"].includes(metric)) entry.interacciones += value;
+  }
+
+  const estadoMap = new Map(postsPorEstado.map((r) => [String(r.estado), Number(r.total)]));
+
+  const seriesRedes: SerieRedSocialPunto[] = seriesRaw.map((row) => ({
+    fecha: new Date(row.fecha).toISOString().slice(0, 10),
+    canal: String(row.canal),
+    metricName: String(row.metric_name),
+    value: Number(row.total),
+  }));
+
+  const snapshot: MarketingSnapshot = {
     fecha: new Date().toISOString().slice(0, 10),
     clicks30d: Number(traffic[0]?.clicks_30d ?? 0),
     impresiones30d: Number(traffic[0]?.impresiones_30d ?? 0),
@@ -72,12 +146,15 @@ export async function buildMarketingSnapshot(sql: Sql): Promise<MarketingSnapsho
         detectadaPorIa: row.fuente === "MOTOR",
       })
     ),
-    redes: social.map(
-      (row): MarketingRedSocial => ({
-        canal: String(row.canal),
-        posts: Number(row.posts),
-        alcance: Number(row.alcance),
-      })
-    ),
+    redes: Array.from(canales.values()),
+    postsBorrador: estadoMap.get("BORRADOR") ?? 0,
+    postsProgramados: estadoMap.get("PROGRAMADO") ?? 0,
+    postsPublicados: estadoMap.get("PUBLICADO") ?? 0,
+    seriesRedes,
   };
+
+  // Agregar análisis de IA
+  snapshot.aiAnalysis = analyzeMarketingData(snapshot);
+
+  return snapshot;
 }

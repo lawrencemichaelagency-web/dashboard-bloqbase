@@ -10,10 +10,22 @@ export type MarketingRedSocial = {
   canal: string;
   posts: number;
   alcance: number;
+  impresiones: number;
+  clicks: number;
+  interacciones: number;
 };
 
-export type MarketingSnapshot = {
+export type SerieRedSocialPunto = {
   fecha: string;
+  canal: string;
+  metricName: string;
+  value: number;
+};
+
+import type { AIRecommendationData } from "@/core/types/ai";
+
+export type MarketingSnapshot = {
+  fecha: string | Date;
   clicks30d: number;
   impresiones30d: number;
   posicionMedia: number | null;
@@ -25,4 +37,9 @@ export type MarketingSnapshot = {
   sparkClicks12Sem: number[];
   oportunidades: MarketingOportunidad[];
   redes: MarketingRedSocial[];
+  postsBorrador: number;
+  postsProgramados: number;
+  postsPublicados: number;
+  seriesRedes: SerieRedSocialPunto[];
+  aiAnalysis?: AIRecommendationData;
 };
