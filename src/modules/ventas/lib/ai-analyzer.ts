@@ -46,7 +46,8 @@ export function analyzeLlamadasData(snapshot: VentasSnapshot): AIRecommendationD
   // Regla 2: Bajo volumen
   if (lowVolume) {
     status = status === "bien" ? "atención" : status;
-    headline = lowVolume ? `Solo ${snapshot.llamadas7d} llamadas esta semana` : headline;
+    headline = `Solo ${snapshot.llamadas7d} llamadas esta semana`;
+    reason = `El volumen de llamadas está muy por debajo de lo necesario para generar oportunidades comerciales de forma sostenible.`;
 
     recommendations.push({
       title: "Aumentar volumen de llamadas",
