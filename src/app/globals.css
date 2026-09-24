@@ -10,10 +10,87 @@
   --mono:'Space Mono',monospace; --display:'Space Grotesk',sans-serif; --sans:Inter,sans-serif;
 }
 *{box-sizing:border-box}
+html{overflow-x:hidden}
 body{margin:0;background:var(--lienzo);color:var(--grafito);font-family:var(--sans);-webkit-font-smoothing:antialiased;
   background-image:linear-gradient(rgba(26,26,24,0.05) 1px,transparent 1px),linear-gradient(90deg,rgba(26,26,24,0.05) 1px,transparent 1px);
-  background-size:56px 56px;}
+  background-size:56px 56px;overflow-x:hidden;}
 a{color:var(--naranja)}
 a:hover{color:var(--naranja-texto)}
 ::selection{background:var(--naranja);color:#fff}
+.font-display{font-family:var(--display)}
+.font-mono-face{font-family:var(--mono)}
 @keyframes bq-blink{0%,49%{opacity:1}50%,100%{opacity:0}}
+@keyframes bq-scan{0%{left:-38%}100%{left:100%}}
+
+/* ── Sistema Bloqbase: piezas de layout portadas del catálogo ── */
+.bq-wrap{max-width:1180px;margin:0 auto;padding:56px 40px 96px}
+.bq-topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:64px;padding:12px 40px;border-bottom:1px solid var(--hairline);background:#fff;position:sticky;top:0;z-index:60}
+.bq-brand{display:flex;align-items:center;gap:9px;flex:none}
+.bq-brand-mark{width:21px;height:21px;border-radius:5px;background:var(--naranja);flex:none}
+.bq-brand-name{font-family:var(--display);font-weight:700;font-size:16.5px;letter-spacing:-0.01em;white-space:nowrap}
+.bq-nav-links{display:flex;gap:22px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.bq-nav-links::-webkit-scrollbar{display:none}
+.bq-nav-link{font-size:13.5px;color:rgba(26,26,24,.55);text-decoration:none;cursor:pointer;white-space:nowrap;flex:none}
+.bq-nav-link:hover{color:var(--grafito)}
+.bq-nav-link-active{font-weight:600;color:var(--grafito);border-bottom:2px solid var(--naranja);padding-bottom:4px;text-decoration:none;white-space:nowrap;flex:none}
+.bq-nav-link-disabled{font-size:13.5px;color:rgba(26,26,24,.35);cursor:not-allowed;white-space:nowrap;flex:none}
+
+@media (max-width: 640px){
+  .bq-wrap{padding:32px 16px 64px}
+  .bq-topbar{padding:10px 16px}
+  .bq-brand-name{font-size:14.5px}
+  .bq-nav-links{gap:16px}
+  .bq-nav-link,.bq-nav-link-active,.bq-nav-link-disabled{font-size:12.5px}
+  .bq-h1{font-size:28px}
+  .bq-sec-title{font-size:19px}
+  .bq-card{padding:18px 18px}
+  .bq-metric-value{font-size:24px}
+  .bq-table-head{padding:14px 16px}
+  .bq-th,.bq-td{padding:0 14px}
+  .bq-tbody-row .bq-td{padding:12px 14px}
+}
+
+.bq-eyebrow{font:400 10.5px var(--mono);letter-spacing:.2em;color:var(--naranja);text-transform:uppercase}
+.bq-h1{font-family:var(--display);font-weight:700;font-size:36px;letter-spacing:-0.03em;line-height:1.05;margin-top:10px}
+
+.bq-sec-head{display:flex;align-items:baseline;gap:14px}
+.bq-sec-num{font:700 12px var(--mono);color:var(--naranja)}
+.bq-sec-title{font-family:var(--display);font-weight:700;font-size:22px;letter-spacing:-0.02em}
+
+.bq-card{background:var(--tarjeta);border:1px solid var(--hairline);border-radius:14px;padding:22px 24px}
+.bq-label-mono{font:400 10px var(--mono);letter-spacing:.14em;color:rgba(26,26,24,.55);text-transform:uppercase}
+
+.bq-table-wrap{background:var(--tarjeta);border:1px solid var(--hairline);border-radius:14px;overflow:hidden}
+.bq-table-head{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid var(--separador);background:#fff}
+.bq-table-title{font-family:var(--display);font-weight:600;font-size:16px;letter-spacing:-0.015em}
+.bq-table-count{font:700 10px var(--mono);letter-spacing:.1em;color:rgba(26,26,24,.5);background:var(--chip);padding:4px 8px;border-radius:4px}
+.bq-thead-row{height:42px;background:#F7F7F5;border-bottom:1px solid var(--separador)}
+.bq-th{font:700 9.5px var(--mono);letter-spacing:.14em;color:rgba(26,26,24,.55);text-transform:uppercase;padding:0 22px}
+.bq-tbody-row{border-bottom:1px solid #F2F2F0}
+.bq-tbody-row:last-child{border-bottom:none}
+.bq-td{padding:14px 22px}
+
+.bq-metric-label{font:400 10px var(--mono);letter-spacing:.14em;color:rgba(26,26,24,.55);text-transform:uppercase}
+.bq-metric-value{font:700 30px var(--mono);letter-spacing:-0.02em;margin-top:14px}
+
+.bq-empty{border:1px dashed #D9D9D6;border-radius:12px;background:#fff;padding:40px 28px;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.bq-empty-icon{width:52px;height:52px;border:1px solid var(--hairline);border-radius:12px;display:flex;align-items:center;justify-content:center;background:#FBFBF9}
+.bq-empty-title{font-family:var(--display);font-weight:600;font-size:18px;letter-spacing:-0.015em;margin-top:18px}
+.bq-empty-desc{font-size:13.5px;color:rgba(26,26,24,.55);margin-top:9px;max-width:280px;line-height:1.55}
+
+/* ── Avisos (catálogo 07): filete de color a la izquierda, radio 2px ── */
+.bq-alert{display:flex;align-items:flex-start;gap:16px;padding:18px 20px;border-radius:2px;background:var(--tarjeta);border:1px solid var(--hairline);position:relative;overflow:hidden}
+.bq-alert-bar{position:absolute;top:0;bottom:0;left:0;width:3px}
+.bq-alert-tag{font:700 9px var(--mono);letter-spacing:.16em;text-transform:uppercase;padding:3px 7px;border-radius:3px}
+.bq-alert-title{font-size:14px;font-weight:600;margin-left:10px}
+.bq-alert-body{font-size:13px;color:rgba(26,26,24,.62);margin-top:6px;line-height:1.55}
+
+/* ── Botones (catálogo 01) ── */
+.bq-btn{border:none;border-radius:10px;font:700 11.5px var(--mono);letter-spacing:.16em;text-transform:uppercase;cursor:pointer;padding:11px 18px;display:inline-flex;align-items:center;gap:10px}
+.bq-btn-primario{background:var(--naranja);color:#fff}
+.bq-btn-primario:hover{background:var(--naranja-hover)}
+.bq-btn-secundario{background:#fff;color:var(--grafito);border:1px solid var(--borde-boton)}
+.bq-btn-secundario:hover{border-color:#B9B9B6;background:#FAFAF9}
+.bq-btn:disabled{background:var(--disabled);color:rgba(26,26,24,.42);cursor:not-allowed;border-color:transparent}
+.bq-spinner{width:12px;height:12px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;display:inline-block;animation:bq-spin .7s linear infinite}
+@keyframes bq-spin{to{transform:rotate(360deg)}}
