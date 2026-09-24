@@ -12,6 +12,7 @@ const STATUS_TO_BADGE: Record<DiagnosisStatus, BadgeStatus> = {
   bien: "hecho",
   atención: "en_revision",
   crítico: "bloqueado",
+  requiere_accion: "bloqueado",
 };
 
 function ModuleStatusBadge({ status }: { status?: DiagnosisStatus }) {
