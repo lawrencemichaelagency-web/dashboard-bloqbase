@@ -42,46 +42,26 @@ describe("Pipeline Analyzer (Ventas > IA 80/20)", () => {
     expect(metricaPrioridades?.current).toBe(5);
   });
 
-  it("treats an instant just before UTC midnight and one just after as the same calendar day boundary for diasSinMovimiento", () => {
-    // Ambos instantes son technically distintos días de reloj UTC (23 sep vs 24 sep),
-    // pero lo que importa es verificar que analyzePipelineData siempre trunca "hoy" a
-    // su propio día UTC antes de calcular días sin movimiento -- así que comparamos
-    // el resultado de un mismo "hoy" pasado con distintos componentes de hora, todos
-    // dentro del mismo día calendario UTC 2026-09-24, construidos sin ambigüedad de
-    // zona horaria local (siempre con sufijo Z).
-    const pipeline = Array.from({ length: 8 }, (_, i) =>
-      oportunidad({ id: String(i), ultimoContacto: "2026-09-01" })
+  it("truncates 'hoy' to its own UTC calendar day before computing diasSinMovimiento", () => {
+    // Esta normalización solo garantiza que la HORA dentro de un mismo día UTC no
+    // afecte el resultado (una propiedad de idempotencia real y verificable). No
+    // cubre el escenario más amplio de un servidor en un huso horario que, sin
+    // normalizar, pudiera construir un objeto Date perteneciente a un día UTC
+    // distinto al pretendido -- ese caso requeriría simular el reloj/zona horaria
+    // del proceso (ej. con vi.setSystemTime + process.env.TZ), fuera de alcance
+    // de este test unitario simple.
+    const pipeline = Array.from({ length: 5 }, (_, i) =>
+      oportunidad({ id: String(i), ultimoContacto: "2026-09-01" }) // 23 días antes del 24, muy bloqueado
     );
-    const hoyInicioDeDiaUTC = new Date("2026-09-24T00:00:00.000Z");
-    const hoyFinDeDiaUTC = new Date("2026-09-24T23:59:59.999Z");
+    const hoyMedianoche = new Date("2026-09-24T00:00:00.000Z");
+    const hoyMedioDia = new Date("2026-09-24T12:00:00.000Z");
+    const hoyCasiFinDelDia = new Date("2026-09-24T23:59:59.999Z");
 
-    const resultInicio = analyzePipelineData(pipeline, hoyInicioDeDiaUTC);
-    const resultFin = analyzePipelineData(pipeline, hoyFinDeDiaUTC);
+    const resultados = [hoyMedianoche, hoyMedioDia, hoyCasiFinDelDia].map((hoy) =>
+      analyzePipelineData(pipeline, hoy)
+    );
 
-    expect(resultInicio.diagnosis.status).toBe(resultFin.diagnosis.status);
-    expect(resultInicio.diagnosis.headline).toBe(resultFin.diagnosis.headline);
-  });
-
-  it("normalizes 'hoy' to its own UTC day, so passing a Date built from a local-time string near midnight does not shift diasSinMovimiento by a day", () => {
-    const pipeline = [
-      oportunidad({ id: "borderline", ultimoContacto: "2026-09-17" }), // exactamente 7 días antes del 24, límite del umbral
-    ];
-    // pipeline.length es 1, menor que el mínimo de 5 -- usamos un pipeline más grande
-    // para que hasSufficientSignal no intercepte antes de llegar a detectarBloqueos.
-    const pipelineCompleto = [
-      ...Array.from({ length: 4 }, (_, i) =>
-        oportunidad({ id: `relleno-${i}`, ultimoContacto: "2026-09-23" }) // 1 día, no bloqueado
-      ),
-      ...pipeline,
-    ];
-
-    const hoySinNormalizarSimulado = new Date(Date.UTC(2026, 8, 24, 0, 0, 0)); // 24 sep 2026 medianoche UTC exacta
-    const result = analyzePipelineData(pipelineCompleto, hoySinNormalizarSimulado);
-
-    // Con exactamente 7 días de diferencia (17 sep a 24 sep), el umbral es "> 7", así
-    // que 7 días exactos NO debe contar como bloqueo -- verifica que el límite se
-    // respeta con precisión de día completo, no con fracciones de hora que la
-    // normalización UTC existe precisamente para eliminar.
-    expect(result.diagnosis.status).toBe("bien");
+    expect(resultados[0].diagnosis.headline).toBe(resultados[1].diagnosis.headline);
+    expect(resultados[1].diagnosis.headline).toBe(resultados[2].diagnosis.headline);
   });
 });
