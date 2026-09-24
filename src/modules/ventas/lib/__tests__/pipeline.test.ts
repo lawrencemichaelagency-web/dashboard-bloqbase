@@ -74,4 +74,16 @@ describe("detectarBloqueos", () => {
     const prioridades = bloqueos.slice(0, 5);
     expect(prioridades).toHaveLength(5);
   });
+
+  it("orders blocked opportunities by days blocked, most urgent first", () => {
+    const oportunidades = [
+      oportunidad({ id: "menos-urgente", ultimoContacto: "2026-09-10" }), // 14 días
+      oportunidad({ id: "mas-urgente", ultimoContacto: "2026-08-01" }), // 54 días
+      oportunidad({ id: "intermedio", ultimoContacto: "2026-08-25" }), // 30 días
+    ];
+    const bloqueos = detectarBloqueos(oportunidades, hoy);
+    expect(bloqueos.map((b) => b.id)).toEqual(["mas-urgente", "intermedio", "menos-urgente"]);
+    expect(bloqueos[0].diasSinMovimiento).toBeGreaterThan(bloqueos[1].diasSinMovimiento);
+    expect(bloqueos[1].diasSinMovimiento).toBeGreaterThan(bloqueos[2].diasSinMovimiento);
+  });
 });
