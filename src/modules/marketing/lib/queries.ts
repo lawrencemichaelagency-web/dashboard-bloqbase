@@ -4,6 +4,8 @@ import { getSqlDataRead } from "@/core/lib/db";
 import { analyzeAtlasSeo, analyzeBloqbaseNet } from "../web/ai-analyzer";
 import { analyzeRedesData } from "../redes/ai-analyzer";
 import { fetchGA4Snapshot } from "./ga4";
+import { fetchBeehiivSnapshot } from "../newsletter/beehiiv";
+import { analyzeNewsletter } from "../newsletter/ai-analyzer";
 
 type Sql = ReturnType<typeof postgres>;
 
@@ -155,6 +157,7 @@ export async function buildMarketingSnapshot(sql?: Sql): Promise<MarketingSnapsh
     postsPublicados: estadoMap.get("PUBLICADO") ?? 0,
     seriesRedes,
     bloqbaseNet: null, // placeholder; se sobreescribe abajo tras fetchGA4Snapshot() (el tipo no es opcional)
+    newsletter: null, // placeholder; se sobreescribe abajo tras fetchBeehiivSnapshot() (el tipo no es opcional)
   };
 
   // Agregar análisis de IA. El analizador de Atlas SEO reemplaza al genérico
@@ -174,6 +177,17 @@ export async function buildMarketingSnapshot(sql?: Sql): Promise<MarketingSnapsh
   snapshot.bloqbaseNetAnalysis = ga4
     ? analyzeBloqbaseNet(ga4, { iniciados: snapshot.formulariosIniciados30d, completados: snapshot.formulariosCompletados30d })
     : undefined;
+
+  const beehiiv = await fetchBeehiivSnapshot();
+  snapshot.newsletter = beehiiv
+    ? {
+        disponible: true,
+        suscriptoresActivos: beehiiv.suscriptoresActivos,
+        averageClickRate: beehiiv.averageClickRate,
+        ultimosEnvios: beehiiv.ultimosEnvios,
+      }
+    : null;
+  snapshot.newsletterAnalysis = beehiiv ? analyzeNewsletter(beehiiv) : undefined;
 
   return snapshot;
 }
