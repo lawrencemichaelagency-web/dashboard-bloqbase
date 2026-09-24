@@ -1,9 +1,14 @@
-import { login } from "./actions";
+"use client";
+
+import { useActionState } from "react";
+import { login, type LoginState } from "./actions";
 
 export default function LoginPage() {
+  const [state, formAction] = useActionState<LoginState, FormData>(login, null);
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-[color:var(--lienzo)]">
-      <form action={login} className="bq-card w-full max-w-[380px] p-[30px_30px_28px]">
+      <form action={formAction} className="bq-card w-full max-w-[380px] p-[30px_30px_28px]">
         <div className="flex items-center gap-[9px]">
           <span className="bq-brand-mark" />
           <span className="bq-brand-name">Bloqbase</span>
@@ -11,6 +16,11 @@ export default function LoginPage() {
         <div className="mt-[18px] font-display text-[22px] font-bold tracking-[-0.02em]">
           Panel ejecutivo
         </div>
+        {state?.error && (
+          <div className="mt-[16px] rounded-[8px] bg-[rgba(255,44,0,0.08)] px-[14px] py-[10px] text-[13px] text-[color:var(--naranja-texto)]">
+            {state.error}
+          </div>
+        )}
         <div className="mt-[26px]">
           <div className="flex items-baseline gap-[9px]">
             <span className="font-mono-face text-[10px] font-bold text-[color:var(--naranja)]">01</span>

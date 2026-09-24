@@ -3,13 +3,19 @@ import { buildMarketingSnapshot } from "../queries";
 
 function createMockSql() {
   let callCount = 0;
+  // Orden real de queries en buildMarketingSnapshot: traffic, coverage,
+  // forms, opportunities, spark, social, socialPosts, postsPorEstado,
+  // seriesRedes.
   const responses = [
-    [{ clicks_30d: 320, impresiones_30d: 5100, posicion_media: 18.4 }],
-    [{ publicadas: 40, total: 55 }],
-    [{ iniciados: 12, completados: 5 }],
-    [{ id: "1", tipo: "CREATE_PAGE", score: 82.5, estado: "PENDIENTE", fuente: "MOTOR" }],
-    [{ semana: "2024-09-01", clicks: 10 }, { semana: "2024-09-08", clicks: 20 }],
-    [{ canal: "linkedin", posts: 6, alcance: 900 }],
+    [{ clicks_30d: 320, impresiones_30d: 5100, posicion_media: 18.4 }], // traffic
+    [{ publicadas: 40, total: 55 }], // coverage
+    [{ iniciados: 12, completados: 5 }], // forms
+    [{ id: "1", tipo: "CREATE_PAGE", score: 82.5, estado: "PENDIENTE", fuente: "MOTOR" }], // opportunities
+    [{ semana: "2024-09-01", clicks: 10 }, { semana: "2024-09-08", clicks: 20 }], // spark
+    [{ canal: "linkedin", metric_name: "Reach", total: 900 }], // social
+    [{ canal: "linkedin", posts: 6 }], // socialPosts
+    [], // postsPorEstado
+    [], // seriesRedes
   ];
 
   return vi.fn(async () => {

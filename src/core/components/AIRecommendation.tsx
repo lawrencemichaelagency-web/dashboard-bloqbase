@@ -15,8 +15,21 @@ const ALERT_STYLE: Record<DiagnosisStatus, { bar: string; tagColor: string; tagB
   requiere_accion: { bar: "var(--naranja)", tagColor: "var(--naranja-texto)", tagBg: "rgba(255,44,0,.09)", label: "Requiere acción" },
 };
 
+// "Sin suficiente señal" (context.sinSenal) es un caso aparte del status
+// bien/atención/crítico/requiere_accion: no hay evidencia de que algo vaya
+// bien NI de que algo vaya mal, así que no debe pintarse como confirmación
+// (teal/"Bien") ni como alerta. Usa grafito -- el color neutral del
+// catálogo, reservado para cuando no hay nada que atender ni confirmar.
+const SIN_SENAL_STYLE = {
+  bar: "var(--grafito)",
+  tagColor: "rgba(26,26,24,0.6)",
+  tagBg: "var(--chip)",
+  label: "Sin señal",
+};
+
 export function AIRecommendation({ data, onAction }: AIRecommendationProps) {
-  const style = ALERT_STYLE[data.diagnosis.status];
+  const esSinSenal = data.diagnosis.context?.sinSenal === true;
+  const style = esSinSenal ? SIN_SENAL_STYLE : ALERT_STYLE[data.diagnosis.status];
   const primaryAction = data.actions[0];
   const secondaryActions = data.actions.slice(1);
 

@@ -4,7 +4,7 @@ import { EmptyState } from "@/core/components/EmptyState";
 import { Timeline } from "@/core/components/Timeline";
 import { Badge, type BadgeStatus } from "@/core/components/Badge";
 import { readLatestSnapshots } from "@/modules/resumen/lib/read";
-import type { DiagnosisStatus } from "@/core/types/ai";
+import type { Diagnosis, DiagnosisStatus } from "@/core/types/ai";
 
 export const dynamic = "force-dynamic";
 
@@ -15,8 +15,16 @@ const STATUS_TO_BADGE: Record<DiagnosisStatus, BadgeStatus> = {
   requiere_accion: "bloqueado",
 };
 
-function ModuleStatusBadge({ status }: { status?: DiagnosisStatus }) {
-  if (!status) return <Badge status="pendiente">Sin datos</Badge>;
+function ModuleStatusBadge({ diagnosis }: { diagnosis?: Diagnosis }) {
+  if (!diagnosis) return <Badge status="pendiente">Sin datos</Badge>;
+  // "Sin suficiente señal" no es lo mismo que "bien": no hay evidencia de que
+  // todo vaya bien, solo falta de datos. Mostrarlo como "Hecho"/verde sería
+  // exactamente el tipo de diagnóstico inventado que la regla anti-error
+  // busca evitar (ver core/types/ai.ts, SIN_SUFICIENTE_SENAL).
+  if (diagnosis.context?.sinSenal === true) {
+    return <Badge status="pendiente">Sin señal</Badge>;
+  }
+  const status = diagnosis.status;
   return (
     <Badge status={STATUS_TO_BADGE[status]}>
       {status.charAt(0).toUpperCase() + status.slice(1)}
@@ -42,11 +50,11 @@ export default async function ResumenPage() {
           <div className="mt-[16px] flex flex-wrap gap-[10px]">
             <div className="flex items-center gap-[8px]">
               <span className="text-[12px] text-[rgba(26,26,24,0.55)]">Growth</span>
-              <ModuleStatusBadge status={marketing?.aiAnalysis?.diagnosis.status} />
+              <ModuleStatusBadge diagnosis={marketing?.aiAnalysis?.diagnosis} />
             </div>
             <div className="flex items-center gap-[8px]">
               <span className="text-[12px] text-[rgba(26,26,24,0.55)]">Ventas</span>
-              <ModuleStatusBadge status={ventas?.aiAnalysis?.diagnosis.status} />
+              <ModuleStatusBadge diagnosis={ventas?.aiAnalysis?.diagnosis} />
             </div>
           </div>
         </section>

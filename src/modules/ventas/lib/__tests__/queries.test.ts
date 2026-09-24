@@ -10,9 +10,9 @@ function fakeSql(rows: unknown[]) {
 describe("buildLlamadasSnapshot", () => {
   it("counts total and positive calls from the last 7 days", async () => {
     const sql = fakeSql([
-      { id: "1", prospecto: "ACME", resultado: "positivo", resumen: "Interesado" },
-      { id: "2", prospecto: "Beta SL", resultado: "negativo", resumen: "No responde" },
-      { id: "3", prospecto: "Gamma", resultado: "positivo", resumen: "Agenda demo" },
+      { id: "1", prospecto: "ACME", resultado: "INTERESADO", resumen: "Interesado" },
+      { id: "2", prospecto: "Beta SL", resultado: "NO_INTERESADO", resumen: "No responde" },
+      { id: "3", prospecto: "Gamma", resultado: "INTERESADO", resumen: "Agenda demo" },
     ]);
 
     const result = await buildLlamadasSnapshot(sql);

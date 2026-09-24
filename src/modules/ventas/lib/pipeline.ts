@@ -23,12 +23,14 @@ export const ETAPAS_PIPELINE: Exclude<EtapaPipeline, "perdido">[] = [
 ];
 
 const MAPEO_ESTADOS: Record<string, EtapaPipeline> = {
-  // Estados de Google Sheets (prospección LinkedIn/partners/subvenciones)
+  // Estados de Google Sheets (prospección LinkedIn/partners)
   "nuevo": "nuevo",
   "pendiente contacto": "nuevo",
   "contactado": "contactado",
   "respondió (neutra)": "contactado",
+  "respondió (sin clasificar)": "contactado",
   "respondió (positiva)": "interes",
+  "respondió (negativa)": "perdido",
   // Resultados de llamadas (ventas.llamadas)
   "interesado": "interes",
   "necesita_seguimiento": "contactado",
@@ -54,7 +56,7 @@ export interface OportunidadPipeline {
   id: string;
   nombre: string;
   etapa: EtapaPipeline;
-  ultimoContacto: string; // formato ISO "YYYY-MM-DD"
+  ultimoContacto: string | null; // formato ISO "YYYY-MM-DD"; null si la fuente no trae fecha real
   origen: string;
 }
 
@@ -68,8 +70,13 @@ const ETAPAS_FUERA_DE_FUNNEL: EtapaPipeline[] = ["cliente", "perdido"];
 /**
  * Detecta oportunidades sin movimiento (documento sección 13.2). Excluye
  * cliente y perdido: ya salieron del funnel activo, así que no cuentan
- * como bloqueo. Ordena de mayor a menor días sin movimiento -- el consumidor
- * (analyzePipelineData) toma los primeros 5 como "Prioridades de hoy".
+ * como bloqueo. También excluye oportunidades sin `ultimoContacto` real
+ * (null): sin fecha no se puede calcular antigüedad, y asumir "hoy" por
+ * defecto escondería leads realmente parados detrás de un dato faltante,
+ * mientras que asumir "muy antiguo" generaría bloqueos falsos por el mismo
+ * motivo -- ninguno de los dos extremos es una inferencia válida. Ordena de
+ * mayor a menor días sin movimiento -- el consumidor (analyzePipelineData)
+ * toma los primeros 5 como "Prioridades de hoy".
  */
 export function detectarBloqueos(
   oportunidades: OportunidadPipeline[],
@@ -79,6 +86,7 @@ export function detectarBloqueos(
 
   for (const op of oportunidades) {
     if (ETAPAS_FUERA_DE_FUNNEL.includes(op.etapa)) continue;
+    if (op.ultimoContacto == null) continue;
 
     const fechaContacto = new Date(op.ultimoContacto);
     const diasSinMovimiento = Math.floor(

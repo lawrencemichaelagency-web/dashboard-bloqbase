@@ -24,7 +24,7 @@ describe("login action", () => {
     const formData = new FormData();
     formData.set("email", "wrong@bloqbase.net");
     formData.set("password", "bad");
-    const result = await login(formData);
+    const result = await login(null, formData);
     expect(result?.error).toBeDefined();
   });
 
@@ -34,7 +34,7 @@ describe("login action", () => {
     formData.set("email", "valid@bloqbase.net");
     formData.set("password", "good");
     try {
-      await login(formData);
+      await login(null, formData);
       // If redirect throws, we'll catch it below
     } catch (e) {
       // Redirect throws NEXT_REDIRECT which is expected

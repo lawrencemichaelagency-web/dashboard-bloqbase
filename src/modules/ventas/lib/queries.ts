@@ -50,11 +50,17 @@ export async function buildLlamadasSnapshot(sql?: Sql): Promise<Omit<VentasSnaps
 }
 
 /**
- * Unifica llamadas y leads de prospección (LinkedIn, partners, subvenciones)
- * en una única lista de oportunidades de pipeline, siguiendo la sección
- * 13.7 del documento: "todos terminan en el mismo pipeline. El canal
- * explica el origen; la etapa comercial explica qué hacer con la
- * oportunidad."
+ * Unifica llamadas y leads de prospección comercial (LinkedIn, partners) en
+ * una única lista de oportunidades de pipeline, siguiendo la sección 13.7
+ * del documento: "todos terminan en el mismo pipeline. El canal explica el
+ * origen; la etapa comercial explica qué hacer con la oportunidad."
+ *
+ * "subvenciones" se excluye a propósito: son programas de ayudas/grants que
+ * Bloqbase solicita, no leads comerciales -- meterlos en el pipeline de
+ * ventas produce bloqueos falsos (una convocatoria de subvención "sin
+ * movimiento" no es una oportunidad de venta olvidada) y diluye la señal
+ * real. Si en el futuro se quiere un seguimiento de subvenciones, debe ser
+ * un pipeline propio, no una etapa más de este.
  */
 export function buildPipelineUnificado(
   llamadas: LlamadaVenta[],
@@ -64,17 +70,17 @@ export function buildPipelineUnificado(
     id: `llamada-${l.id}`,
     nombre: l.prospecto,
     etapa: clasificarEtapa(l.resultado),
-    ultimoContacto: l.procesadoAt ?? new Date().toISOString().slice(0, 10),
+    ultimoContacto: l.procesadoAt ?? null,
     origen: "llamada",
   }));
 
   const desdeLeads: OportunidadPipeline[] = leads
-    .filter((l) => l.empresa.trim().length > 0)
+    .filter((l) => l.fuente !== "subvenciones" && l.empresa.trim().length > 0)
     .map((l, idx) => ({
       id: `${l.fuente}-${idx}`,
       nombre: l.empresa,
       etapa: clasificarEtapa(l.estado),
-      ultimoContacto: l.fecha || new Date().toISOString().slice(0, 10),
+      ultimoContacto: l.fecha.trim().length > 0 ? l.fecha : null,
       origen: l.fuente,
     }));
 

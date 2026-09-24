@@ -3,7 +3,9 @@
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/core/lib/supabase-server";
 
-export async function login(formData: FormData) {
+export type LoginState = { error: string } | null;
+
+export async function login(_prevState: LoginState, formData: FormData): Promise<LoginState> {
   const email = String(formData.get("email") ?? "");
   const password = String(formData.get("password") ?? "");
 
@@ -12,7 +14,7 @@ export async function login(formData: FormData) {
 
   if (error) {
     console.warn("[login] authentication failed", error);
-    return;
+    return { error: "Email o contraseña incorrectos." };
   }
 
   redirect("/");
