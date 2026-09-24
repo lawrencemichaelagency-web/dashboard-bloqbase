@@ -112,6 +112,8 @@ export default async function MarketingPage() {
             <SocialMetricsChart series={snapshot?.seriesRedes ?? []} />
           </div>
 
+          {snapshot?.redesAnalysis && <MarketingAIRecommendation data={snapshot.redesAnalysis} />}
+
           <div className="mt-[24px]">
             {redes.length > 0 ? (
               <Table<RedRow>

@@ -1,5 +1,6 @@
 import type { MarketingSnapshot } from "./types";
 import type { AIRecommendationData, Recommendation } from "@/core/types/ai";
+import { hasSufficientSignal } from "@/core/lib/ai-engine";
 
 export function analyzeMarketingData(snapshot: MarketingSnapshot): AIRecommendationData {
   const recommendations: Recommendation[] = [];
@@ -42,8 +43,8 @@ export function analyzeMarketingData(snapshot: MarketingSnapshot): AIRecommendat
     });
   }
 
-  // Regla 2: Si la conversión de formularios es baja
-  if (conversionRate > 0 && conversionRate < 0.2) {
+  // Regla 2: Si la conversión de formularios es baja (con suficiente volumen)
+  if (hasSufficientSignal(snapshot.formulariosIniciados30d, 10) && conversionRate < 0.2) {
     status = "atención";
     headline = "Conversion de formularios baja";
     reason = `Solo ${(conversionRate * 100).toFixed(1)}% de los inicios se convierten en leads. El embudo pierde ${snapshot.formulariosIniciados30d - snapshot.formulariosCompletados30d} leads potenciales.`;

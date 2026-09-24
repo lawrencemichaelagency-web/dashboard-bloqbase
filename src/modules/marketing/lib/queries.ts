@@ -2,6 +2,7 @@ import type postgres from "postgres";
 import type { MarketingSnapshot, MarketingOportunidad, MarketingRedSocial, SerieRedSocialPunto } from "./types";
 import { getSqlDataRead } from "@/core/lib/db";
 import { analyzeMarketingData } from "./ai-analyzer";
+import { analyzeRedesData } from "../redes/ai-analyzer";
 
 type Sql = ReturnType<typeof postgres>;
 
@@ -155,6 +156,7 @@ export async function buildMarketingSnapshot(sql?: Sql): Promise<MarketingSnapsh
 
   // Agregar análisis de IA
   snapshot.aiAnalysis = analyzeMarketingData(snapshot);
+  snapshot.redesAnalysis = analyzeRedesData(snapshot.redes, snapshot.seriesRedes);
 
   return snapshot;
 }

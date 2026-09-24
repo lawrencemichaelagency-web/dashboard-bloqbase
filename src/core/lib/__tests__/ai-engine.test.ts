@@ -1,4 +1,4 @@
-import { detectTrend, compareToBaseline, findBottleneck } from "../ai-engine";
+import { detectTrend, compareToBaseline, findBottleneck, hasSufficientSignal, compareToHistoricalBaseline } from "../ai-engine";
 import { describe, it, expect } from "vitest";
 
 describe("ai-engine", () => {
@@ -45,6 +45,56 @@ describe("ai-engine", () => {
     it("returns null for empty metrics", () => {
       const result = findBottleneck({});
       expect(result).toBeNull();
+    });
+  });
+
+  describe("hasSufficientSignal", () => {
+    it("returns false when sample size is zero", () => {
+      expect(hasSufficientSignal(0, 5)).toBe(false);
+    });
+
+    it("returns false when sample size is below the minimum", () => {
+      expect(hasSufficientSignal(3, 5)).toBe(false);
+    });
+
+    it("returns true when sample size meets the minimum", () => {
+      expect(hasSufficientSignal(5, 5)).toBe(true);
+    });
+
+    it("returns true when sample size exceeds the minimum", () => {
+      expect(hasSufficientSignal(20, 5)).toBe(true);
+    });
+
+    it("defaults the minimum to 5 when not provided", () => {
+      expect(hasSufficientSignal(4)).toBe(false);
+      expect(hasSufficientSignal(5)).toBe(true);
+    });
+  });
+
+  describe("compareToHistoricalBaseline", () => {
+    it("flags a significant drop below the historical average", () => {
+      const historial = [100, 105, 98, 102]; // media = 101.25
+      const result = compareToHistoricalBaseline(60, historial);
+      expect(result.status).toBe("down");
+      expect(result.baseline).toBeCloseTo(101.25, 1);
+      expect(result.deltaPercent).toBeGreaterThan(20);
+    });
+
+    it("flags a significant rise above the historical average", () => {
+      const historial = [100, 100, 100, 100];
+      const result = compareToHistoricalBaseline(150, historial);
+      expect(result.status).toBe("up");
+    });
+
+    it("treats small deviations as stable", () => {
+      const historial = [100, 102, 98, 100];
+      const result = compareToHistoricalBaseline(103, historial);
+      expect(result.status).toBe("stable");
+    });
+
+    it("returns insufficient signal when historial has fewer than 3 points", () => {
+      const result = compareToHistoricalBaseline(50, [100, 90]);
+      expect(result.status).toBe("insufficient_data");
     });
   });
 });

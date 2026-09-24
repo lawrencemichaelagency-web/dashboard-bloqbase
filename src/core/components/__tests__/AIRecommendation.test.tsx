@@ -50,4 +50,21 @@ describe("AIRecommendation", () => {
     const { container } = render(<AIRecommendation data={mockData} />);
     expect(container.textContent).toContain("Métricas saludables");
   });
+
+  it("renders requiere_accion status with the naranja alert style", () => {
+    const mockData: AIRecommendationData = {
+      diagnosis: {
+        status: "requiere_accion",
+        headline: "Instagram cae con fuerza",
+        reason: "El alcance está muy por debajo del baseline de las últimas 4 semanas.",
+        context: {},
+      },
+      recommendations: [],
+      actions: [],
+    };
+
+    const { container } = render(<AIRecommendation data={mockData} />);
+    expect(container.textContent).toContain("Requiere acción");
+    expect(container.textContent).toContain("Instagram cae con fuerza");
+  });
 });

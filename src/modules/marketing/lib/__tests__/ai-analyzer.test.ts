@@ -62,4 +62,32 @@ describe("Marketing AI Analyzer", () => {
     expect(result.recommendations.length).toBeGreaterThanOrEqual(1);
     expect(result.recommendations.length).toBeLessThanOrEqual(3);
   });
+
+  it("does not diagnose conversion with fewer than 10 form starts", () => {
+    const tinySnapshot = {
+      ...mockSnapshot,
+      formulariosIniciados30d: 3,
+      formulariosCompletados30d: 0,
+      oportunidades: [], // sin oportunidades tampoco, para aislar la señal de conversión
+    };
+    const result = analyzeMarketingData(tinySnapshot);
+    const conversionRec = result.recommendations.find((r) =>
+      r.title.includes("CTA")
+    );
+    expect(conversionRec).toBeUndefined();
+  });
+
+  it("does not diagnose conversion when sample size is small even if the observed rate looks low", () => {
+    const tinySnapshotWithApparentSignal = {
+      ...mockSnapshot,
+      formulariosIniciados30d: 6,
+      formulariosCompletados30d: 1, // ~16.7% de conversión -- por debajo del 20%, pero con solo 6 formularios la muestra es insuficiente
+      oportunidades: [],
+    };
+    const result = analyzeMarketingData(tinySnapshotWithApparentSignal);
+    const conversionRec = result.recommendations.find((r) =>
+      r.title.includes("CTA")
+    );
+    expect(conversionRec).toBeUndefined();
+  });
 });

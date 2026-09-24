@@ -3,6 +3,7 @@ export type LlamadaVenta = {
   prospecto: string;
   resultado: string;
   resumen: string;
+  procesadoAt?: string; // formato ISO "YYYY-MM-DD"; ausente si la fila no trae fecha
 };
 
 export type LeadProspeccion = {

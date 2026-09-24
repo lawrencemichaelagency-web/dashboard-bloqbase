@@ -1,7 +1,17 @@
 import type { VentasSnapshot } from "./types";
 import type { AIRecommendationData, Recommendation } from "@/core/types/ai";
+import { SIN_SUFICIENTE_SENAL } from "@/core/types/ai";
+import { hasSufficientSignal } from "@/core/lib/ai-engine";
 
 export function analyzeLlamadasData(snapshot: VentasSnapshot): AIRecommendationData {
+  // Regla anti-error (documento sección 13.4): con muy pocas llamadas no
+  // hay evidencia suficiente para diagnosticar tasa de positivas ni volumen.
+  // El mínimo de 5 es el mismo umbral que "bajo volumen" ya usaba, así que
+  // no perdemos cobertura: por debajo de 5, siempre era una lectura débil.
+  if (!hasSufficientSignal(snapshot.llamadas7d, 5)) {
+    return SIN_SUFICIENTE_SENAL;
+  }
+
   const recommendations: Recommendation[] = [];
 
   const positiveRate =
@@ -10,10 +20,7 @@ export function analyzeLlamadasData(snapshot: VentasSnapshot): AIRecommendationD
   // Señal 1: Tasa de resultado positivo
   const lowPositiveRate = positiveRate < 0.35; // Menos del 35% es bajo
 
-  // Señal 2: Volumen de llamadas
-  const lowVolume = snapshot.llamadas7d < 5;
-
-  // Señal 3: Análisis de llamadas sin resultado definido
+  // Señal 2: Análisis de llamadas sin resultado definido
   const sinResultado = snapshot.llamadasRecientes.filter(
     (l) => l.resultado === "SIN_RESULTADO"
   ).length;
@@ -43,28 +50,7 @@ export function analyzeLlamadasData(snapshot: VentasSnapshot): AIRecommendationD
     });
   }
 
-  // Regla 2: Bajo volumen
-  if (lowVolume) {
-    status = status === "bien" ? "atención" : status;
-    headline = `Solo ${snapshot.llamadas7d} llamadas esta semana`;
-    reason = `El volumen de llamadas está muy por debajo de lo necesario para generar oportunidades comerciales de forma sostenible.`;
-
-    recommendations.push({
-      title: "Aumentar volumen de llamadas",
-      description:
-        "Menos de 5 llamadas por semana es insuficiente para generar oportunidades. Necesitas al menos 10-15.",
-      priority: "alta",
-      metrics: [
-        {
-          label: "Llamadas (7d)",
-          current: snapshot.llamadas7d,
-          expected: "15",
-        },
-      ],
-    });
-  }
-
-  // Regla 3: Llamadas sin resultado
+  // Regla 2: Llamadas sin resultado
   if (sinResultado > 0) {
     recommendations.push({
       title: `Clasificar ${sinResultado} llamada${sinResultado > 1 ? "s" : ""} sin resultado`,
@@ -74,7 +60,7 @@ export function analyzeLlamadasData(snapshot: VentasSnapshot): AIRecommendationD
     });
   }
 
-  // Regla 4: Genérica si todo está bien
+  // Regla 3: Genérica si todo está bien
   if (recommendations.length === 0) {
     recommendations.push({
       title: "Mantener ritmo actual",
@@ -91,7 +77,7 @@ export function analyzeLlamadasData(snapshot: VentasSnapshot): AIRecommendationD
       context: {
         positiveRate,
         volume: snapshot.llamadas7d,
-        undefined: sinResultado,
+        sinResultado,
       },
     },
     recommendations: recommendations.slice(0, 3),

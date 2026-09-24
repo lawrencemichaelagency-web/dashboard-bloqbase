@@ -1,5 +1,6 @@
 import type postgres from "postgres";
-import type { LlamadaVenta, VentasSnapshot } from "./types";
+import type { LlamadaVenta, VentasSnapshot, LeadProspeccion } from "./types";
+import { clasificarEtapa, type OportunidadPipeline } from "./pipeline";
 import { getSqlDataRead } from "@/core/lib/db";
 import { analyzeLlamadasData } from "./ai-analyzer";
 
@@ -26,6 +27,7 @@ export async function buildLlamadasSnapshot(sql?: Sql): Promise<Omit<VentasSnaps
     prospecto: String(row.prospecto ?? "Sin identificar"),
     resultado: String(row.resultado ?? "SIN_RESULTADO"),
     resumen: String(row.resumen ?? ""),
+    procesadoAt: row.procesado_at ? new Date(row.procesado_at).toISOString().slice(0, 10) : undefined,
   }));
 
   const result = {
@@ -45,4 +47,36 @@ export async function buildLlamadasSnapshot(sql?: Sql): Promise<Omit<VentasSnaps
   (result as any).aiAnalysis = analyzeLlamadasData(tempSnapshot);
 
   return result;
+}
+
+/**
+ * Unifica llamadas y leads de prospección (LinkedIn, partners, subvenciones)
+ * en una única lista de oportunidades de pipeline, siguiendo la sección
+ * 13.7 del documento: "todos terminan en el mismo pipeline. El canal
+ * explica el origen; la etapa comercial explica qué hacer con la
+ * oportunidad."
+ */
+export function buildPipelineUnificado(
+  llamadas: LlamadaVenta[],
+  leads: LeadProspeccion[]
+): OportunidadPipeline[] {
+  const desdeLlamadas: OportunidadPipeline[] = llamadas.map((l) => ({
+    id: `llamada-${l.id}`,
+    nombre: l.prospecto,
+    etapa: clasificarEtapa(l.resultado),
+    ultimoContacto: l.procesadoAt ?? new Date().toISOString().slice(0, 10),
+    origen: "llamada",
+  }));
+
+  const desdeLeads: OportunidadPipeline[] = leads
+    .filter((l) => l.empresa.trim().length > 0)
+    .map((l, idx) => ({
+      id: `${l.fuente}-${idx}`,
+      nombre: l.empresa,
+      etapa: clasificarEtapa(l.estado),
+      ultimoContacto: l.fecha || new Date().toISOString().slice(0, 10),
+      origen: l.fuente,
+    }));
+
+  return [...desdeLlamadas, ...desdeLeads];
 }
