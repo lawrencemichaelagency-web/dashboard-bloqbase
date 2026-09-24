@@ -1,3 +1,6 @@
+// "requiere_accion" es el vocabulario de los dashboards de canal (Bien / Atención /
+// Requiere acción); "crítico" es el vocabulario del patrón general e Inicio (Bien /
+// Atención / Crítico). Cada analizador usa el que corresponda a su sección.
 export type DiagnosisStatus = "bien" | "atención" | "crítico" | "requiere_accion";
 
 export interface Diagnosis {
@@ -35,6 +38,9 @@ export interface AIRecommendationData {
 
 export const SIN_SUFICIENTE_SENAL: AIRecommendationData = {
   diagnosis: {
+    // status "bien" es intencional: sin datos suficientes no hay evidencia de que
+    // algo vaya mal, así que tratarlo como alerta sería otra forma de inventar una
+    // lectura -- exactamente lo que esta regla anti-error busca evitar.
     status: "bien",
     headline: "Sin suficiente señal",
     reason: "Todavía no hay volumen de datos suficiente para diagnosticar con confianza. Evitamos inventar una recomendación.",
