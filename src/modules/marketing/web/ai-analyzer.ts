@@ -4,10 +4,15 @@ import { SIN_SUFICIENTE_SENAL } from "@/core/types/ai";
 import { hasSufficientSignal } from "@/core/lib/ai-engine";
 
 /**
- * Analizador de Growth > Web > atlas.bloqbase.net (documento sección 8.2).
+ * Analizador de Growth > Web > atlas.bloqbase.net (documento de arquitectura,
+ * sección 8.2). "Growth" es el módulo conceptual del documento; en el código
+ * vive bajo `src/modules/marketing/` (la página se llama /marketing pero
+ * cubre exactamente lo que el documento define como Growth) -- no existe ni
+ * está previsto un directorio `growth/` separado.
+ *
  * bloqbase.net (GA4) no está cubierto aquí porque esa fuente de datos
  * todavía no está conectada -- cuando lo esté, se añade un analizador
- * hermano `analyzeBloqbaseNet()` en este mismo módulo, sin tocar este.
+ * hermano `analyzeBloqbaseNet()` en este mismo archivo, sin tocar este.
  */
 export function analyzeAtlasSeo(snapshot: MarketingSnapshot): AIRecommendationData {
   // Regla anti-error (sección 8.2): con pocas impresiones no hay evidencia
@@ -58,6 +63,11 @@ export function analyzeAtlasSeo(snapshot: MarketingSnapshot): AIRecommendationDa
     });
   }
 
+  // Nota: esta regla de cobertura y la de "oportunidad de mayor score" arriba
+  // duplican lógica de src/modules/marketing/lib/ai-analyzer.ts a propósito --
+  // es una transición gradual mientras se extraen el resto de submódulos de
+  // Growth (Redes, Newsletter, Cold Email, Ads). El analizador genérico se
+  // irá reduciendo hasta desaparecer cuando todos los submódulos existan.
   if (coveragePercent < 80) {
     status = status === "bien" ? "atención" : status;
     recommendations.push({
