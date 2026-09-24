@@ -41,35 +41,14 @@ describe("Atlas SEO Analyzer (Growth > Web)", () => {
     expect(result.recommendations.length).toBeLessThanOrEqual(3);
   });
 
-  it("returns sin suficiente señal when there are fewer than 100 impressions and fewer than 10 form starts", () => {
-    const tinySnapshot = { ...mockSnapshot, impresiones30d: 40, clicks30d: 2, formulariosIniciados30d: 3 };
+  it("returns sin suficiente señal when there are fewer than 100 impressions", () => {
+    const tinySnapshot = { ...mockSnapshot, impresiones30d: 40, clicks30d: 2 };
     const result = analyzeAtlasSeo(tinySnapshot);
     expect(result.diagnosis.headline).toBe("Sin suficiente señal");
   });
 
-  it("diagnoses low form conversion when there is enough form volume, even with zero SEO impressions", () => {
-    const conversionSnapshot = {
-      ...mockSnapshot,
-      impresiones30d: 0,
-      clicks30d: 0,
-      posicionMedia: null,
-      oportunidades: [],
-      formulariosIniciados30d: 100,
-      formulariosCompletados30d: 10,
-    };
-    const result = analyzeAtlasSeo(conversionSnapshot);
-    expect(result.diagnosis.status).toBe("atención");
-    const conversionRec = result.recommendations.find((r) => r.title.includes("CTA"));
-    expect(conversionRec).toBeDefined();
-  });
-
-  it("does not diagnose conversion with fewer than 10 form starts", () => {
-    const tinySnapshot = {
-      ...mockSnapshot,
-      formulariosIniciados30d: 6,
-      formulariosCompletados30d: 1, // ~16.7%, por debajo del 20% pero muestra insuficiente
-    };
-    const result = analyzeAtlasSeo(tinySnapshot);
+  it("never mentions form conversion (that belongs to analyzeBloqbaseNet now)", () => {
+    const result = analyzeAtlasSeo(mockSnapshot);
     const conversionRec = result.recommendations.find((r) => r.title.includes("CTA"));
     expect(conversionRec).toBeUndefined();
   });

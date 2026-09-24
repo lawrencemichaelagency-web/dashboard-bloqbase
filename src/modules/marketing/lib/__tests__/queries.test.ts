@@ -76,6 +76,12 @@ describe("buildMarketingSnapshot", () => {
     expect(snapshot.bloqbaseNet).toBeNull();
   });
 
+  it("returns bloqbaseNetAnalysis: undefined when GA4 is not connected", async () => {
+    const sql = createMockSql();
+    const snapshot = await buildMarketingSnapshot(sql);
+    expect(snapshot.bloqbaseNetAnalysis).toBeUndefined();
+  });
+
   it("populates bloqbaseNet when GA4 snapshot is available", async () => {
     const { fetchGA4Snapshot } = await import("../ga4");
     vi.mocked(fetchGA4Snapshot).mockResolvedValueOnce({
@@ -87,5 +93,6 @@ describe("buildMarketingSnapshot", () => {
     const sql = createMockSql();
     const snapshot = await buildMarketingSnapshot(sql);
     expect(snapshot.bloqbaseNet).toEqual({ disponible: true, usuarios30d: 500, sesiones30d: 700 });
+    expect(snapshot.bloqbaseNetAnalysis).toBeDefined();
   });
 });

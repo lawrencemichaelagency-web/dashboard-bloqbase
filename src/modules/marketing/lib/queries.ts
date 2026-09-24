@@ -1,7 +1,7 @@
 import type postgres from "postgres";
 import type { MarketingSnapshot, MarketingOportunidad, MarketingRedSocial, SerieRedSocialPunto } from "./types";
 import { getSqlDataRead } from "@/core/lib/db";
-import { analyzeAtlasSeo } from "../web/ai-analyzer";
+import { analyzeAtlasSeo, analyzeBloqbaseNet } from "../web/ai-analyzer";
 import { analyzeRedesData } from "../redes/ai-analyzer";
 import { fetchGA4Snapshot } from "./ga4";
 
@@ -171,7 +171,9 @@ export async function buildMarketingSnapshot(sql?: Sql): Promise<MarketingSnapsh
   snapshot.bloqbaseNet = ga4
     ? { disponible: true, usuarios30d: ga4.usuarios30d, sesiones30d: ga4.sesiones30d }
     : null;
-  // snapshot.bloqbaseNetAnalysis se conecta en una tarea posterior (analyzeBloqbaseNet)
+  snapshot.bloqbaseNetAnalysis = ga4
+    ? analyzeBloqbaseNet(ga4, { iniciados: snapshot.formulariosIniciados30d, completados: snapshot.formulariosCompletados30d })
+    : undefined;
 
   return snapshot;
 }
