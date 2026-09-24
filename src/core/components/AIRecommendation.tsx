@@ -12,6 +12,7 @@ const ALERT_STYLE: Record<DiagnosisStatus, { bar: string; tagColor: string; tagB
   bien: { bar: "var(--teal)", tagColor: "var(--teal-texto)", tagBg: "rgba(22,160,133,.1)", label: "Bien" },
   atención: { bar: "var(--amarillo)", tagColor: "var(--amarillo-texto)", tagBg: "rgba(245,183,0,.14)", label: "Atención" },
   crítico: { bar: "var(--naranja)", tagColor: "var(--naranja-texto)", tagBg: "rgba(255,44,0,.09)", label: "Crítico" },
+  requiere_accion: { bar: "var(--naranja)", tagColor: "var(--naranja-texto)", tagBg: "rgba(255,44,0,.09)", label: "Requiere acción" },
 };
 
 export function AIRecommendation({ data, onAction }: AIRecommendationProps) {
