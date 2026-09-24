@@ -42,4 +42,5 @@ export type MarketingSnapshot = {
   postsPublicados: number;
   seriesRedes: SerieRedSocialPunto[];
   aiAnalysis?: AIRecommendationData;
+  redesAnalysis?: AIRecommendationData;
 };
