@@ -30,6 +30,7 @@ describe("readLatestSnapshots", () => {
       postsProgramados: 0,
       postsPublicados: 0,
       seriesRedes: [],
+      bloqbaseNet: null,
     });
     vi.mocked(buildLlamadasSnapshot).mockResolvedValue({
       llamadas7d: 5,

@@ -4,6 +4,7 @@ export type MarketingOportunidad = {
   score: number | null;
   estado: string;
   detectadaPorIa: boolean;
+  url: string | null; // página/URL afectada (seo.opportunities.url)
 };
 
 export type MarketingRedSocial = {
@@ -20,6 +21,12 @@ export type SerieRedSocialPunto = {
   canal: string;
   metricName: string;
   value: number;
+};
+
+export type BloqbaseNetSnapshot = {
+  disponible: true;
+  usuarios30d: number;
+  sesiones30d: number;
 };
 
 import type { AIRecommendationData } from "@/core/types/ai";
@@ -43,4 +50,6 @@ export type MarketingSnapshot = {
   seriesRedes: SerieRedSocialPunto[];
   aiAnalysis?: AIRecommendationData;
   redesAnalysis?: AIRecommendationData;
+  bloqbaseNet: BloqbaseNetSnapshot | null; // null = no conectado (GA4_PROPERTY_ID ausente)
+  bloqbaseNetAnalysis?: AIRecommendationData;
 };

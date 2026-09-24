@@ -85,6 +85,14 @@ a:hover{color:var(--naranja-texto)}
 .bq-alert-title{font-size:14px;font-weight:600;margin-left:10px}
 .bq-alert-body{font-size:13px;color:rgba(26,26,24,.62);margin-top:6px;line-height:1.55}
 
+/* ── Pestañas (catálogo 04): navegación secundaria dentro de una página ── */
+.bq-tabs-row{display:flex;margin-top:12px;border-bottom:1px solid var(--separador)}
+.bq-tab{padding:10px 16px;font-size:13.5px;color:rgba(26,26,24,.55);cursor:pointer;text-decoration:none;display:inline-block} /* text-decoration:none: <Link> de next/link renderiza <a>, que heredaría el subrayado global de enlaces sin esto */
+.bq-tab:hover{color:var(--grafito)}
+.bq-tab-active{font-weight:600;border-bottom:2px solid var(--grafito);margin-bottom:-1px;color:var(--grafito)}
+.bq-tab-disabled{color:rgba(26,26,24,.35);cursor:not-allowed}
+.bq-tab-count{font:700 10px var(--mono);color:rgba(26,26,24,.45);margin-left:5px}
+
 /* ── Botones (catálogo 01) ── */
 .bq-btn{border:none;border-radius:10px;font:700 11.5px var(--mono);letter-spacing:.16em;text-transform:uppercase;cursor:pointer;padding:11px 18px;display:inline-flex;align-items:center;gap:10px}
 .bq-btn-primario{background:var(--naranja);color:#fff}

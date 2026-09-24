@@ -1,8 +1,9 @@
 import type postgres from "postgres";
 import type { MarketingSnapshot, MarketingOportunidad, MarketingRedSocial, SerieRedSocialPunto } from "./types";
 import { getSqlDataRead } from "@/core/lib/db";
-import { analyzeAtlasSeo } from "../web/ai-analyzer";
+import { analyzeAtlasSeo, analyzeBloqbaseNet } from "../web/ai-analyzer";
 import { analyzeRedesData } from "../redes/ai-analyzer";
+import { fetchGA4Snapshot } from "./ga4";
 
 type Sql = ReturnType<typeof postgres>;
 
@@ -44,7 +45,7 @@ export async function buildMarketingSnapshot(sql?: Sql): Promise<MarketingSnapsh
   `);
 
   const opportunities = await safe("opportunities", () => sqlRead`
-    select id, tipo, score, estado, fuente
+    select id, tipo, score, estado, fuente, url
     from seo.opportunities
     where estado = 'PENDIENTE'
     order by score desc nulls last
@@ -145,6 +146,7 @@ export async function buildMarketingSnapshot(sql?: Sql): Promise<MarketingSnapsh
         score: row.score != null ? Number(row.score) : null,
         estado: String(row.estado),
         detectadaPorIa: row.fuente === "MOTOR",
+        url: row.url != null ? String(row.url) : null,
       })
     ),
     redes: Array.from(canales.values()),
@@ -152,6 +154,7 @@ export async function buildMarketingSnapshot(sql?: Sql): Promise<MarketingSnapsh
     postsProgramados: estadoMap.get("PROGRAMADO") ?? 0,
     postsPublicados: estadoMap.get("PUBLICADO") ?? 0,
     seriesRedes,
+    bloqbaseNet: null, // placeholder; se sobreescribe abajo tras fetchGA4Snapshot() (el tipo no es opcional)
   };
 
   // Agregar análisis de IA. El analizador de Atlas SEO reemplaza al genérico
@@ -159,6 +162,18 @@ export async function buildMarketingSnapshot(sql?: Sql): Promise<MarketingSnapsh
   // ver la nota en web/ai-analyzer.ts sobre esta transición.
   snapshot.aiAnalysis = analyzeAtlasSeo(snapshot);
   snapshot.redesAnalysis = analyzeRedesData(snapshot.seriesRedes);
+
+  // TODO: cuando GA4_PROPERTY_ID esté configurado en producción, esta llamada
+  // hará una petición de red real a la API de GA4 en cada carga de /marketing
+  // (página force-dynamic, sin caché). Considerar unstable_cache/revalidate
+  // si la latencia de la API resulta perceptible.
+  const ga4 = await fetchGA4Snapshot();
+  snapshot.bloqbaseNet = ga4
+    ? { disponible: true, usuarios30d: ga4.usuarios30d, sesiones30d: ga4.sesiones30d }
+    : null;
+  snapshot.bloqbaseNetAnalysis = ga4
+    ? analyzeBloqbaseNet(ga4, { iniciados: snapshot.formulariosIniciados30d, completados: snapshot.formulariosCompletados30d })
+    : undefined;
 
   return snapshot;
 }
