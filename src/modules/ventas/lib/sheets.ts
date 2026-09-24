@@ -2,8 +2,9 @@ import { google } from "googleapis";
 import type { LeadProspeccion } from "./types";
 
 const SHEET_IDS = {
-  linkedin: "10cd7J-eTxuSkVesO2Jg0HmeecKzO8yfBG0EmbHjbZIE",
-  partners: "1hAmRjkgxUplEPIkIHClGnlISwYlh41reQZzdYI_IWBY",
+  linkedin: "10C0BWxKDX4fzcyyzbSyfxfWOPnoTKg9aioSgipQ0Ok0",
+  // "Partners" y "Subvenciones" viven en el mismo spreadsheet (pestañas distintas)
+  partners: "1hh8O5RKvoO2fRP7eGvpqHAAHEcprJrLWtjwdWt9XQvw",
   subvenciones: "1hh8O5RKvoO2fRP7eGvpqHAAHEcprJrLWtjwdWt9XQvw",
 } as const;
 
@@ -29,22 +30,33 @@ export function normalizeProspeccionRows(input: {
   partners: string[][];
   subvenciones: string[][];
 }): LeadProspeccion[] {
-  const parse = (rows: string[][], fuente: LeadProspeccion["fuente"]): LeadProspeccion[] =>
-    rows
-      .slice(1) // skip header row
-      .filter((row) => row.length > 0 && row.some((cell) => cell?.trim()))
-      .map((row) => ({
-        fuente,
-        fecha: row[0] ?? "",
-        empresa: row[1] ?? "",
-        estado: row[2] ?? "",
-      }));
+  const nonEmpty = (rows: string[][]) => rows.slice(1).filter((row) => row.length > 0 && row.some((cell) => cell?.trim()));
 
-  return [
-    ...parse(input.linkedin, "linkedin"),
-    ...parse(input.partners, "partners"),
-    ...parse(input.subvenciones, "subvenciones"),
-  ];
+  // LinkedIn: Link perfil(0) / Fecha envío(1) / Nombre(2) / Empresa(3) / ... / Respondió(8)
+  const linkedin: LeadProspeccion[] = nonEmpty(input.linkedin).map((row) => ({
+    fuente: "linkedin",
+    fecha: row[1] || "",
+    empresa: row[3] || row[2] || "",
+    estado: row[8] ? `Respondió (${row[9] || "sin clasificar"})` : "Contactado",
+  }));
+
+  // Partnerships - Aliados: Fecha(0) / Empresa(1) / Tipo(2) / ... / Estado(11)
+  const partners: LeadProspeccion[] = nonEmpty(input.partners).map((row) => ({
+    fuente: "partners",
+    fecha: row[0] || "",
+    empresa: row[1] || "",
+    estado: row[11] || "",
+  }));
+
+  // Ayudas: ID(0) / Fuente(1) / Tipo(2) / Nombre(3) / ... / Fecha límite(9) / ... / Estado(13) / Fecha añadido(14)
+  const subvenciones: LeadProspeccion[] = nonEmpty(input.subvenciones).map((row) => ({
+    fuente: "subvenciones",
+    fecha: row[14] || "",
+    empresa: row[3] || "",
+    estado: row[13] || "",
+  }));
+
+  return [...linkedin, ...partners, ...subvenciones];
 }
 
 export async function fetchProspeccionSnapshot(): Promise<LeadProspeccion[]> {

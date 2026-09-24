@@ -15,13 +15,9 @@ export function MetricCard({
   note?: string;
 }) {
   return (
-    <div className="rounded-[14px] border border-[color:var(--hairline)] bg-[color:var(--tarjeta)] p-[22px_24px]">
-      <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-[rgba(26,26,24,0.55)]">
-        {label}
-      </div>
-      <div className="mt-[14px] font-mono text-[30px] font-bold tracking-[-0.02em]">
-        {value}
-      </div>
+    <div className="bq-card">
+      <div className="bq-metric-label">{label}</div>
+      <div className="bq-metric-value">{value}</div>
       {delta || note ? (
         <div className="mt-[12px] flex items-center gap-[7px]">
           {delta ? (
