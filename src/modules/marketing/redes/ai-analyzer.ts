@@ -16,6 +16,10 @@ export function analyzeRedesData(
   redes: MarketingRedSocial[],
   series: SerieRedSocialPunto[]
 ): AIRecommendationData {
+  // Impressions es la única métrica con serie histórica fiable por canal en
+  // este momento (alcance, clicks e interacciones todavía no se recolectan
+  // como serie temporal punto a punto). Cuando esas series existan, esta
+  // función puede extenderse para comparar también contra ellas.
   const porCanal = new Map<string, number[]>();
   for (const punto of series) {
     if (punto.metricName !== "Impressions") continue;
@@ -69,7 +73,16 @@ export function analyzeRedesData(
   }
 
   return {
-    diagnosis: { status, headline, reason, context: { deterioros } },
+    diagnosis: {
+      status,
+      headline,
+      reason,
+      context: {
+        canalesEnCaida: deterioros.length,
+        peorCanal: deterioros[0]?.canal ?? null,
+        peorDeltaPercent: deterioros[0]?.deltaPercent ?? null,
+      },
+    },
     recommendations: recommendations.slice(0, 3),
     actions: [
       { id: "redes-ver-analisis", label: "Ver análisis" },
