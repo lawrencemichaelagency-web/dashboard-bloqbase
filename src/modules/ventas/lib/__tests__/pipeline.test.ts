@@ -66,13 +66,12 @@ describe("detectarBloqueos", () => {
     expect(bloqueos).toHaveLength(0);
   });
 
-  it("caps prioridades de hoy at 5, ordered by days blocked descending", () => {
+  it("returns all blocked opportunities without truncating (limiting to 5 is a future consumer's responsibility)", () => {
     const oportunidades = Array.from({ length: 8 }, (_, i) =>
       oportunidad({ id: String(i), ultimoContacto: `2026-08-${20 + i}` })
     );
     const bloqueos = detectarBloqueos(oportunidades, hoy);
-    const prioridades = bloqueos.slice(0, 5);
-    expect(prioridades).toHaveLength(5);
+    expect(bloqueos).toHaveLength(8);
   });
 
   it("orders blocked opportunities by days blocked, most urgent first", () => {
