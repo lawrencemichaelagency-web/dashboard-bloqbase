@@ -72,4 +72,11 @@ describe("fetchGA4Snapshot", () => {
     const result = await fetchGA4Snapshot();
     expect(result).toBeNull();
   });
+
+  it("returns null (not throw) when GOOGLE_SERVICE_ACCOUNT_KEY_B64 decodes to invalid JSON", async () => {
+    vi.stubEnv("GA4_PROPERTY_ID", "123456");
+    vi.stubEnv("GOOGLE_SERVICE_ACCOUNT_KEY_B64", Buffer.from("esto no es json valido {{{").toString("base64"));
+    const { fetchGA4Snapshot } = await import("../ga4");
+    await expect(fetchGA4Snapshot()).resolves.toBeNull();
+  });
 });

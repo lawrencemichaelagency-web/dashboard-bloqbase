@@ -36,10 +36,10 @@ export async function fetchGA4Snapshot(): Promise<GA4Snapshot | null> {
   const propertyId = process.env.GA4_PROPERTY_ID;
   if (!propertyId) return null;
 
-  const auth = getGA4Auth();
-  if (!auth) return null;
-
   try {
+    const auth = getGA4Auth();
+    if (!auth) return null;
+
     const analyticsdata = google.analyticsdata({ version: "v1beta", auth });
 
     const [totals, weekly] = await Promise.all([
