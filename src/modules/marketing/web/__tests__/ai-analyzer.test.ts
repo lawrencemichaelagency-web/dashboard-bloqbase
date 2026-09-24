@@ -15,13 +15,14 @@ describe("Atlas SEO Analyzer (Growth > Web)", () => {
     oportunidadesPendientes: 25,
     sparkClicks12Sem: [],
     oportunidades: [
-      { id: "1", tipo: "CONVIERTE_SIN_TRAFICO_ORGANICO", score: 95, estado: "PENDIENTE", detectadaPorIa: true },
+      { id: "1", tipo: "CONVIERTE_SIN_TRAFICO_ORGANICO", score: 95, estado: "PENDIENTE", detectadaPorIa: true, url: "/blog/pagina" },
     ],
     redes: [],
     postsBorrador: 0,
     postsProgramados: 0,
     postsPublicados: 0,
     seriesRedes: [],
+    bloqbaseNet: null,
   };
 
   it("diagnoses low CTR as the dominant bottleneck when impressions are high but clicks are low", () => {
