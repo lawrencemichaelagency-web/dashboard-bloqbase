@@ -27,6 +27,7 @@ export async function buildLlamadasSnapshot(sql?: Sql): Promise<Omit<VentasSnaps
     prospecto: String(row.prospecto ?? "Sin identificar"),
     resultado: String(row.resultado ?? "SIN_RESULTADO"),
     resumen: String(row.resumen ?? ""),
+    procesadoAt: row.procesado_at ? new Date(row.procesado_at).toISOString().slice(0, 10) : undefined,
   }));
 
   const result = {
@@ -63,7 +64,7 @@ export function buildPipelineUnificado(
     id: `llamada-${l.id}`,
     nombre: l.prospecto,
     etapa: clasificarEtapa(l.resultado),
-    ultimoContacto: new Date().toISOString().slice(0, 10), // las llamadas no traen fecha propia en LlamadaVenta
+    ultimoContacto: l.procesadoAt ?? new Date().toISOString().slice(0, 10),
     origen: "llamada",
   }));
 

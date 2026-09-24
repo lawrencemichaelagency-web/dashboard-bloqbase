@@ -53,4 +53,12 @@ describe("buildPipelineUnificado", () => {
     const pipeline = buildPipelineUnificado([], leads);
     expect(pipeline).toHaveLength(0);
   });
+
+  it("uses the call's own procesadoAt date instead of today when available", () => {
+    const llamadas: LlamadaVenta[] = [
+      { id: "call-old", prospecto: "Empresa Antigua", resultado: "NECESITA_SEGUIMIENTO", resumen: "...", procesadoAt: "2026-08-01" },
+    ];
+    const pipeline = buildPipelineUnificado(llamadas, []);
+    expect(pipeline[0].ultimoContacto).toBe("2026-08-01");
+  });
 });
