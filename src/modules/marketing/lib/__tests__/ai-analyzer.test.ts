@@ -76,4 +76,18 @@ describe("Marketing AI Analyzer", () => {
     );
     expect(conversionRec).toBeUndefined();
   });
+
+  it("does not diagnose conversion when sample size is small even if the observed rate looks low", () => {
+    const tinySnapshotWithApparentSignal = {
+      ...mockSnapshot,
+      formulariosIniciados30d: 6,
+      formulariosCompletados30d: 1, // ~16.7% de conversión -- por debajo del 20%, pero con solo 6 formularios la muestra es insuficiente
+      oportunidades: [],
+    };
+    const result = analyzeMarketingData(tinySnapshotWithApparentSignal);
+    const conversionRec = result.recommendations.find((r) =>
+      r.title.includes("CTA")
+    );
+    expect(conversionRec).toBeUndefined();
+  });
 });
