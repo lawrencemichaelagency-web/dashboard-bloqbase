@@ -87,7 +87,7 @@ a:hover{color:var(--naranja-texto)}
 
 /* ── Pestañas (catálogo 04): navegación secundaria dentro de una página ── */
 .bq-tabs-row{display:flex;margin-top:12px;border-bottom:1px solid var(--separador)}
-.bq-tab{padding:10px 16px;font-size:13.5px;color:rgba(26,26,24,.55);cursor:pointer;text-decoration:none;display:inline-block}
+.bq-tab{padding:10px 16px;font-size:13.5px;color:rgba(26,26,24,.55);cursor:pointer;text-decoration:none;display:inline-block} /* text-decoration:none: <Link> de next/link renderiza <a>, que heredaría el subrayado global de enlaces sin esto */
 .bq-tab:hover{color:var(--grafito)}
 .bq-tab-active{font-weight:600;border-bottom:2px solid var(--grafito);margin-bottom:-1px;color:var(--grafito)}
 .bq-tab-disabled{color:rgba(26,26,24,.35);cursor:not-allowed}
