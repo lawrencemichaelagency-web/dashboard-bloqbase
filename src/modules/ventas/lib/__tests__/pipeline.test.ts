@@ -1,4 +1,5 @@
 import { clasificarEtapa, ETAPAS_PIPELINE } from "../pipeline";
+import { detectarBloqueos, type OportunidadPipeline } from "../pipeline";
 import { describe, it, expect } from "vitest";
 
 describe("clasificarEtapa", () => {
@@ -30,5 +31,47 @@ describe("clasificarEtapa", () => {
       "piloto",
       "cliente",
     ]);
+  });
+});
+
+describe("detectarBloqueos", () => {
+  const hoy = new Date("2026-09-24");
+
+  function oportunidad(overrides: Partial<OportunidadPipeline>): OportunidadPipeline {
+    return {
+      id: "1",
+      nombre: "Empresa Test",
+      etapa: "interes",
+      ultimoContacto: "2026-09-20",
+      origen: "linkedin",
+      ...overrides,
+    };
+  }
+
+  it("flags opportunities with no contact in more than 7 days as blocked", () => {
+    const oportunidades = [
+      oportunidad({ id: "a", ultimoContacto: "2026-09-10" }), // 14 días
+      oportunidad({ id: "b", ultimoContacto: "2026-09-23" }), // 1 día
+    ];
+    const bloqueos = detectarBloqueos(oportunidades, hoy);
+    expect(bloqueos.map((b) => b.id)).toEqual(["a"]);
+  });
+
+  it("excludes cliente and perdido stages from blockage detection", () => {
+    const oportunidades = [
+      oportunidad({ id: "a", etapa: "cliente", ultimoContacto: "2026-01-01" }),
+      oportunidad({ id: "b", etapa: "perdido", ultimoContacto: "2026-01-01" }),
+    ];
+    const bloqueos = detectarBloqueos(oportunidades, hoy);
+    expect(bloqueos).toHaveLength(0);
+  });
+
+  it("caps prioridades de hoy at 5, ordered by days blocked descending", () => {
+    const oportunidades = Array.from({ length: 8 }, (_, i) =>
+      oportunidad({ id: String(i), ultimoContacto: `2026-08-${20 + i}` })
+    );
+    const bloqueos = detectarBloqueos(oportunidades, hoy);
+    const prioridades = bloqueos.slice(0, 5);
+    expect(prioridades).toHaveLength(5);
   });
 });

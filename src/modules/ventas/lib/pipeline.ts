@@ -49,3 +49,46 @@ export function clasificarEtapa(estadoLibre: string): EtapaPipeline {
   const normalizado = estadoLibre.trim().toLowerCase();
   return MAPEO_ESTADOS[normalizado] ?? "nuevo";
 }
+
+export interface OportunidadPipeline {
+  id: string;
+  nombre: string;
+  etapa: EtapaPipeline;
+  ultimoContacto: string; // formato ISO "YYYY-MM-DD"
+  origen: string;
+}
+
+export interface Bloqueo extends OportunidadPipeline {
+  diasSinMovimiento: number;
+}
+
+const DIAS_LIMITE_BLOQUEO = 7;
+const ETAPAS_FUERA_DE_FUNNEL: EtapaPipeline[] = ["cliente", "perdido"];
+
+/**
+ * Detecta oportunidades sin movimiento (documento sección 13.2). Excluye
+ * cliente y perdido: ya salieron del funnel activo, así que no cuentan
+ * como bloqueo. Ordena de mayor a menor días sin movimiento -- el consumidor
+ * (analyzePipelineData) toma los primeros 5 como "Prioridades de hoy".
+ */
+export function detectarBloqueos(
+  oportunidades: OportunidadPipeline[],
+  hoy: Date
+): Bloqueo[] {
+  const bloqueos: Bloqueo[] = [];
+
+  for (const op of oportunidades) {
+    if (ETAPAS_FUERA_DE_FUNNEL.includes(op.etapa)) continue;
+
+    const fechaContacto = new Date(op.ultimoContacto);
+    const diasSinMovimiento = Math.floor(
+      (hoy.getTime() - fechaContacto.getTime()) / (1000 * 60 * 60 * 24)
+    );
+
+    if (diasSinMovimiento > DIAS_LIMITE_BLOQUEO) {
+      bloqueos.push({ ...op, diasSinMovimiento });
+    }
+  }
+
+  return bloqueos.sort((a, b) => b.diasSinMovimiento - a.diasSinMovimiento);
+}
