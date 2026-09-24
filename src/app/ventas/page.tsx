@@ -3,7 +3,8 @@ import { MetricCard } from "@/core/components/MetricCard";
 import { Badge, type BadgeStatus } from "@/core/components/Badge";
 import { Table } from "@/core/components/Table";
 import { EmptyState } from "@/core/components/EmptyState";
-import { buildLlamadasSnapshot } from "@/modules/ventas/lib/queries";
+import { buildLlamadasSnapshot, buildPipelineUnificado } from "@/modules/ventas/lib/queries";
+import { analyzePipelineData } from "@/modules/ventas/lib/pipeline-analyzer";
 import { fetchProspeccionSnapshot } from "@/modules/ventas/lib/sheets";
 import { buildColdEmailSnapshot } from "@/modules/ventas/lib/coldEmail";
 import { VentasAIRecommendation } from "@/modules/ventas/components/VentasAIRecommendation";
@@ -66,6 +67,9 @@ export default async function VentasPage() {
   const llamadas7d = llamadasData?.llamadas7d ?? 0;
   const llamadasPositivas7d = llamadasData?.llamadasPositivas7d ?? 0;
 
+  const pipelineUnificado = buildPipelineUnificado(llamadasData?.llamadasRecientes ?? [], pipeline);
+  const pipelineAnalysis = analyzePipelineData(pipelineUnificado);
+
   const porFuente = pipeline.reduce<Record<string, number>>((acc, l) => {
     acc[l.fuente] = (acc[l.fuente] ?? 0) + 1;
     return acc;
@@ -120,6 +124,8 @@ export default async function VentasPage() {
           <div className="mt-[8px] max-w-[480px] text-[13px] leading-[1.55] text-[rgba(26,26,24,0.55)]">
             LinkedIn ({porFuente.linkedin ?? 0}), aliados ({porFuente.partners ?? 0}) y subvenciones ({porFuente.subvenciones ?? 0}), cada una desde su pestaña en Google Sheets.
           </div>
+
+          {pipelineAnalysis && <VentasAIRecommendation data={pipelineAnalysis} />}
 
           <div className="mt-[22px]">{leadTable("linkedin", "Outreach LinkedIn", pipeline)}</div>
           <div className="mt-[24px]">{leadTable("partners", "Aliados y partners", pipeline)}</div>
