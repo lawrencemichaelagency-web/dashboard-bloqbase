@@ -1,4 +1,4 @@
-export type DiagnosisStatus = "bien" | "atención" | "crítico";
+export type DiagnosisStatus = "bien" | "atención" | "crítico" | "requiere_accion";
 
 export interface Diagnosis {
   status: DiagnosisStatus;
@@ -32,3 +32,14 @@ export interface AIRecommendationData {
   recommendations: Recommendation[]; // Máximo 3
   actions: Action[];
 }
+
+export const SIN_SUFICIENTE_SENAL: AIRecommendationData = {
+  diagnosis: {
+    status: "bien",
+    headline: "Sin suficiente señal",
+    reason: "Todavía no hay volumen de datos suficiente para diagnosticar con confianza. Evitamos inventar una recomendación.",
+    context: { sinSenal: true },
+  },
+  recommendations: [],
+  actions: [],
+};

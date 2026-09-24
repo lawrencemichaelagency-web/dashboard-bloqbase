@@ -69,3 +69,13 @@ export function generateDiagnosisStatus(signals: {
 
   return "bien";
 }
+
+/**
+ * Regla anti-error del documento de arquitectura (secciones 9.3, 10.3, 11.3,
+ * 12.3, 13.4): nunca declarar un diagnóstico o recomendación sin un mínimo
+ * de volumen de datos. Con muestras pequeñas, el analizador debe devolver
+ * SIN_SUFICIENTE_SENAL en vez de inventar una lectura.
+ */
+export function hasSufficientSignal(sampleSize: number, minimum = 5): boolean {
+  return sampleSize >= minimum;
+}

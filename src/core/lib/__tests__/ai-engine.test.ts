@@ -1,4 +1,4 @@
-import { detectTrend, compareToBaseline, findBottleneck } from "../ai-engine";
+import { detectTrend, compareToBaseline, findBottleneck, hasSufficientSignal } from "../ai-engine";
 import { describe, it, expect } from "vitest";
 
 describe("ai-engine", () => {
@@ -45,6 +45,29 @@ describe("ai-engine", () => {
     it("returns null for empty metrics", () => {
       const result = findBottleneck({});
       expect(result).toBeNull();
+    });
+  });
+
+  describe("hasSufficientSignal", () => {
+    it("returns false when sample size is zero", () => {
+      expect(hasSufficientSignal(0, 5)).toBe(false);
+    });
+
+    it("returns false when sample size is below the minimum", () => {
+      expect(hasSufficientSignal(3, 5)).toBe(false);
+    });
+
+    it("returns true when sample size meets the minimum", () => {
+      expect(hasSufficientSignal(5, 5)).toBe(true);
+    });
+
+    it("returns true when sample size exceeds the minimum", () => {
+      expect(hasSufficientSignal(20, 5)).toBe(true);
+    });
+
+    it("defaults the minimum to 5 when not provided", () => {
+      expect(hasSufficientSignal(4)).toBe(false);
+      expect(hasSufficientSignal(5)).toBe(true);
     });
   });
 });
