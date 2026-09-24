@@ -10,12 +10,14 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
+  // Write connection (dashboard.* tables). Marketing/ventas snapshot builders
+  // use their own read connection to the data-source project internally.
   const sql = getSql();
   const today = new Date().toISOString().slice(0, 10);
   const results: Record<string, boolean> = {};
 
   try {
-    const marketing = await buildMarketingSnapshot(sql);
+    const marketing = await buildMarketingSnapshot();
     await sql`
       insert into dashboard.marketing_diario
         (fecha, clicks_30d, impresiones_30d, posicion_media, paginas_publicadas, paginas_total,
@@ -51,7 +53,7 @@ export async function GET(request: Request) {
 
   try {
     const [llamadas, pipeline] = await Promise.all([
-      buildLlamadasSnapshot(sql),
+      buildLlamadasSnapshot(),
       fetchProspeccionSnapshot(),
     ]);
     await sql`

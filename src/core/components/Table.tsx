@@ -18,50 +18,45 @@ export function Table<T>({
   rowKey: (row: T) => string;
 }) {
   return (
-    <div className="overflow-hidden rounded-[14px] border border-[color:var(--hairline)] bg-[color:var(--tarjeta)]">
-      <div className="flex items-center justify-between border-b border-[color:var(--separador)] bg-white px-[22px] py-[18px]">
+    <div className="bq-table-wrap">
+      <div className="bq-table-head">
         <div className="flex items-center gap-[12px]">
-          <span className="font-[var(--display)] text-[16px] font-semibold tracking-[-0.015em]">
-            {title}
-          </span>
-          {count ? (
-            <span className="rounded-[4px] bg-[color:var(--chip)] px-[8px] py-[4px] font-mono text-[10px] font-bold tracking-[0.1em] text-[rgba(26,26,24,0.5)]">
-              {count}
-            </span>
-          ) : null}
+          <span className="bq-table-title">{title}</span>
+          {count ? <span className="bq-table-count">{count}</span> : null}
         </div>
       </div>
-      <table className="w-full border-collapse">
-        <thead>
-          <tr className="h-[42px] bg-[#F7F7F5]">
-            {columns.map((col) => (
-              <th
-                key={col.header}
-                className={
-                  "px-[22px] font-mono text-[9.5px] font-bold uppercase tracking-[0.14em] text-[rgba(26,26,24,0.55)] " +
-                  (col.align === "right" ? "text-right" : "text-left")
-                }
-              >
-                {col.header}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => (
-            <tr key={rowKey(row)} className="border-b border-[#F2F2F0]">
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[520px] border-collapse" style={{ tableLayout: "fixed" }}>
+          <thead>
+            <tr className="bq-thead-row">
               {columns.map((col) => (
-                <td
+                <th
                   key={col.header}
-                  className={"px-[22px] py-[14px] " + (col.align === "right" ? "text-right" : "text-left")}
+                  className={"bq-th w-[220px] " + (col.align === "right" ? "text-right" : "text-left")}
                 >
-                  {col.render(row)}
-                </td>
+                  {col.header}
+                </th>
               ))}
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {rows.map((row) => (
+              <tr key={rowKey(row)} className="bq-tbody-row">
+                {columns.map((col) => (
+                  <td
+                    key={col.header}
+                    className={
+                      "bq-td w-[220px] break-words " + (col.align === "right" ? "text-right" : "text-left")
+                    }
+                  >
+                    {col.render(row)}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
       {rows.length === 0 ? (
         <div className="p-[24px] text-center text-[13px] text-[rgba(26,26,24,0.5)]">
           Sin filas que mostrar.
