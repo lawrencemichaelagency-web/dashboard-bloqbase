@@ -62,4 +62,18 @@ describe("Marketing AI Analyzer", () => {
     expect(result.recommendations.length).toBeGreaterThanOrEqual(1);
     expect(result.recommendations.length).toBeLessThanOrEqual(3);
   });
+
+  it("does not diagnose conversion with fewer than 10 form starts", () => {
+    const tinySnapshot = {
+      ...mockSnapshot,
+      formulariosIniciados30d: 3,
+      formulariosCompletados30d: 0,
+      oportunidades: [], // sin oportunidades tampoco, para aislar la señal de conversión
+    };
+    const result = analyzeMarketingData(tinySnapshot);
+    const conversionRec = result.recommendations.find((r) =>
+      r.title.includes("CTA")
+    );
+    expect(conversionRec).toBeUndefined();
+  });
 });
