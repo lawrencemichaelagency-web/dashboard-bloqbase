@@ -35,13 +35,27 @@ describe("Ventas AI Analyzer", () => {
     expect(result.recommendations.length).toBeLessThanOrEqual(3);
   });
 
-  it("detects low volume", () => {
+  it("returns sin suficiente señal for low call volume (below the 5-call minimum)", () => {
     const lowVolumeSnapshot: VentasSnapshot = {
       ...mockSnapshot,
       llamadas7d: 2,
       llamadasPositivas7d: 1,
     };
     const result = analyzeLlamadasData(lowVolumeSnapshot);
-    expect(result.diagnosis.status).toBe("atención");
+    expect(result.diagnosis.headline).toBe("Sin suficiente señal");
+  });
+
+  it("returns 'sin suficiente señal' when there is zero call volume", () => {
+    const emptySnapshot: VentasSnapshot = {
+      llamadas7d: 0,
+      llamadasPositivas7d: 0,
+      llamadasRecientes: [],
+      leadsNuevosSemana: 0,
+      pipelineProspeccion: [],
+      fecha: new Date(),
+    };
+    const result = analyzeLlamadasData(emptySnapshot);
+    expect(result.diagnosis.headline).toBe("Sin suficiente señal");
+    expect(result.recommendations).toHaveLength(0);
   });
 });
