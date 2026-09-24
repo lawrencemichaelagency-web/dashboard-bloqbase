@@ -33,6 +33,10 @@ const MAPEO_ESTADOS: Record<string, EtapaPipeline> = {
   "interesado": "interes",
   "necesita_seguimiento": "contactado",
   "no_interesado": "perdido",
+  // "sin_resultado" implica que la llamada sí ocurrió (se intentó contactar),
+  // solo que no se registró el desenlace -- es una señal explícita de
+  // contacto, no un lead nuevo sin tocar.
+  "sin_resultado": "contactado",
 };
 
 /**

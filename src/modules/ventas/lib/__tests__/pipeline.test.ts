@@ -14,6 +14,7 @@ describe("clasificarEtapa", () => {
     expect(clasificarEtapa("INTERESADO")).toBe("interes");
     expect(clasificarEtapa("NECESITA_SEGUIMIENTO")).toBe("contactado");
     expect(clasificarEtapa("NO_INTERESADO")).toBe("perdido");
+    expect(clasificarEtapa("SIN_RESULTADO")).toBe("contactado");
   });
 
   it("falls back to nuevo for unrecognized strings", () => {
