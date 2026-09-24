@@ -154,7 +154,7 @@ export async function buildMarketingSnapshot(sql?: Sql): Promise<MarketingSnapsh
     postsProgramados: estadoMap.get("PROGRAMADO") ?? 0,
     postsPublicados: estadoMap.get("PUBLICADO") ?? 0,
     seriesRedes,
-    bloqbaseNet: null,
+    bloqbaseNet: null, // placeholder; se sobreescribe abajo tras fetchGA4Snapshot() (el tipo no es opcional)
   };
 
   // Agregar análisis de IA. El analizador de Atlas SEO reemplaza al genérico
@@ -163,6 +163,10 @@ export async function buildMarketingSnapshot(sql?: Sql): Promise<MarketingSnapsh
   snapshot.aiAnalysis = analyzeAtlasSeo(snapshot);
   snapshot.redesAnalysis = analyzeRedesData(snapshot.seriesRedes);
 
+  // TODO: cuando GA4_PROPERTY_ID esté configurado en producción, esta llamada
+  // hará una petición de red real a la API de GA4 en cada carga de /marketing
+  // (página force-dynamic, sin caché). Considerar unstable_cache/revalidate
+  // si la latencia de la API resulta perceptible.
   const ga4 = await fetchGA4Snapshot();
   snapshot.bloqbaseNet = ga4
     ? { disponible: true, usuarios30d: ga4.usuarios30d, sesiones30d: ga4.sesiones30d }
