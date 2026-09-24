@@ -2,53 +2,86 @@ import { NavBar } from "@/core/components/NavBar";
 import { MetricCard } from "@/core/components/MetricCard";
 import { EmptyState } from "@/core/components/EmptyState";
 import { Timeline } from "@/core/components/Timeline";
-import { getSql } from "@/core/lib/db";
+import { Badge, type BadgeStatus } from "@/core/components/Badge";
 import { readLatestSnapshots } from "@/modules/resumen/lib/read";
+import type { DiagnosisStatus } from "@/core/types/ai";
 
 export const dynamic = "force-dynamic";
 
+const STATUS_TO_BADGE: Record<DiagnosisStatus, BadgeStatus> = {
+  bien: "hecho",
+  atención: "en_revision",
+  crítico: "bloqueado",
+};
+
+function ModuleStatusBadge({ status }: { status?: DiagnosisStatus }) {
+  if (!status) return <Badge status="pendiente">Sin datos</Badge>;
+  return (
+    <Badge status={STATUS_TO_BADGE[status]}>
+      {status.charAt(0).toUpperCase() + status.slice(1)}
+    </Badge>
+  );
+}
+
 export default async function ResumenPage() {
-  const sql = getSql();
-  const { marketing, ventas } = await readLatestSnapshots(sql);
+  const { marketing, ventas } = await readLatestSnapshots();
 
   return (
     <div>
       <NavBar />
-      <div className="mx-auto max-w-[1180px] px-[40px] py-[56px]">
-        <div className="font-[var(--display)] text-[36px] font-bold tracking-[-0.03em]">
-          Resumen
-        </div>
-        <div className="mt-[26px] grid grid-cols-1 gap-[16px] sm:grid-cols-2 lg:grid-cols-3">
+      <div className="bq-wrap">
+        <div className="bq-eyebrow">Panel ejecutivo</div>
+        <div className="bq-h1">Resumen</div>
+
+        <section className="mt-[32px]">
+          <div className="bq-sec-head">
+            <span className="bq-sec-num">00</span>
+            <span className="bq-sec-title">Estado por módulo</span>
+          </div>
+          <div className="mt-[16px] flex flex-wrap gap-[10px]">
+            <div className="flex items-center gap-[8px]">
+              <span className="text-[12px] text-[rgba(26,26,24,0.55)]">Growth</span>
+              <ModuleStatusBadge status={marketing?.aiAnalysis?.diagnosis.status} />
+            </div>
+            <div className="flex items-center gap-[8px]">
+              <span className="text-[12px] text-[rgba(26,26,24,0.55)]">Ventas</span>
+              <ModuleStatusBadge status={ventas?.aiAnalysis?.diagnosis.status} />
+            </div>
+          </div>
+        </section>
+
+        <div className="mt-[32px] grid grid-cols-1 gap-[16px] sm:grid-cols-2 lg:grid-cols-3">
           <MetricCard
             label="Clicks orgánicos (30d)"
-            value={marketing ? String(marketing.clicks_30d) : "—"}
+            value={marketing ? String(marketing.clicks30d) : "—"}
           />
           <MetricCard
             label="Oportunidades SEO pendientes"
-            value={marketing ? String(marketing.oportunidades_pendientes) : "—"}
+            value={marketing ? String(marketing.oportunidadesPendientes) : "—"}
           />
           <MetricCard
-            label="Leads nuevos esta semana"
-            value={ventas ? String(ventas.leads_nuevos_semana) : "—"}
+            label="Páginas publicadas"
+            value={marketing ? `${marketing.paginasPublicadas}/${marketing.paginasTotal}` : "—"}
           />
           <MetricCard
             label="Llamadas de venta (7d)"
-            value={ventas ? String(ventas.llamadas_7d) : "—"}
-            note={ventas ? `${ventas.llamadas_positivas_7d} con resultado positivo` : undefined}
+            value={ventas ? String(ventas.llamadas7d) : "—"}
+            note={ventas ? `${ventas.llamadasPositivas7d} con resultado positivo` : undefined}
           />
-          <div className="rounded-[14px] border border-dashed border-[#D9D9D6] bg-white p-[22px_24px]">
-            <EmptyState title="Producto" description="Llegará cuando exista acceso al repositorio del producto real." />
-          </div>
-          <div className="rounded-[14px] border border-dashed border-[#D9D9D6] bg-white p-[22px_24px]">
-            <EmptyState title="Ingresos" description="Llegará cuando el webhook de Stripe persista suscripciones/pagos." />
-          </div>
+          <MetricCard
+            label="Posts en redes (borrador)"
+            value={marketing ? String(marketing.postsBorrador) : "—"}
+          />
+          <EmptyState title="Producto" description="Llegará cuando exista acceso al repositorio del producto real." />
         </div>
-        <div className="mt-[40px]">
-          <div className="font-[var(--display)] text-[20px] font-semibold tracking-[-0.02em]">
-            Actividad reciente
+
+        <section className="mt-[56px] border-t-2 border-[color:var(--grafito)] pt-[26px]">
+          <div className="bq-sec-head">
+            <span className="bq-sec-num">01</span>
+            <span className="bq-sec-title">Actividad reciente</span>
           </div>
           <Timeline items={[]} />
-        </div>
+        </section>
       </div>
     </div>
   );
