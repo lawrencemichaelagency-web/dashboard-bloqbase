@@ -13,12 +13,15 @@ const MAX_PRIORIDADES_HOY = 5;
  * de llamadas): este analizador mira el pipeline unificado -- llamadas +
  * prospección -- y su función es detectar oportunidades olvidadas.
  *
- * IMPORTANTE sobre el parámetro `hoy`: debe normalizarse a medianoche UTC
- * antes de pasarlo a detectarBloqueos(), porque `ultimoContacto` llega como
- * fecha ISO "YYYY-MM-DD" (interpretada por Date como medianoche UTC). Si
- * `hoy` se construyera con new Date() y su hora local sin normalizar, el
- * cálculo de días sin movimiento podría desviarse en ±1 día cerca del
- * límite de 7 días, dependiendo del huso horario del servidor.
+ * Sobre el parámetro `hoy`: se normaliza a medianoche UTC antes de pasarlo
+ * a detectarBloqueos(), porque `ultimoContacto` llega como fecha ISO
+ * "YYYY-MM-DD" (interpretada por Date como medianoche UTC). Esto garantiza
+ * que el resultado no dependa de la hora exacta dentro de un mismo día UTC
+ * (idempotencia horaria, verificada en los tests). No corrige el caso más
+ * amplio de que `hoy` ya pertenezca a un día UTC distinto al pretendido por
+ * un desfase de huso horario del proceso -- ese escenario requeriría
+ * controlar el reloj/TZ del servidor, no algo que esta función pueda
+ * detectar por sí sola a partir del Date que recibe.
  */
 export function analyzePipelineData(
   pipeline: OportunidadPipeline[],
