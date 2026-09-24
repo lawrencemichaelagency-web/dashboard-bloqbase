@@ -1,6 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 import { buildMarketingSnapshot } from "../queries";
 
+vi.mock("../ga4", () => ({
+  fetchGA4Snapshot: vi.fn(async () => null),
+}));
+
 function createMockSql() {
   let callCount = 0;
   // Orden real de queries en buildMarketingSnapshot: traffic, coverage,
@@ -64,5 +68,24 @@ describe("buildMarketingSnapshot", () => {
     const sql = vi.fn(async () => responses[callCount++] || []) as unknown as Parameters<typeof buildMarketingSnapshot>[0];
     const snapshot = await buildMarketingSnapshot(sql);
     expect(snapshot.oportunidades[0].url).toBeNull();
+  });
+
+  it("returns bloqbaseNet: null when GA4 is not connected", async () => {
+    const sql = createMockSql();
+    const snapshot = await buildMarketingSnapshot(sql);
+    expect(snapshot.bloqbaseNet).toBeNull();
+  });
+
+  it("populates bloqbaseNet when GA4 snapshot is available", async () => {
+    const { fetchGA4Snapshot } = await import("../ga4");
+    vi.mocked(fetchGA4Snapshot).mockResolvedValueOnce({
+      disponible: true,
+      usuarios30d: 500,
+      sesiones30d: 700,
+      seriesUsuariosSemanal: [],
+    });
+    const sql = createMockSql();
+    const snapshot = await buildMarketingSnapshot(sql);
+    expect(snapshot.bloqbaseNet).toEqual({ disponible: true, usuarios30d: 500, sesiones30d: 700 });
   });
 });

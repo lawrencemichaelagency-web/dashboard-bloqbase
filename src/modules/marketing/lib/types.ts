@@ -23,6 +23,12 @@ export type SerieRedSocialPunto = {
   value: number;
 };
 
+export type BloqbaseNetSnapshot = {
+  disponible: true;
+  usuarios30d: number;
+  sesiones30d: number;
+};
+
 import type { AIRecommendationData } from "@/core/types/ai";
 
 export type MarketingSnapshot = {
@@ -44,4 +50,6 @@ export type MarketingSnapshot = {
   seriesRedes: SerieRedSocialPunto[];
   aiAnalysis?: AIRecommendationData;
   redesAnalysis?: AIRecommendationData;
+  bloqbaseNet: BloqbaseNetSnapshot | null; // null = no conectado (GA4_PROPERTY_ID ausente)
+  bloqbaseNetAnalysis?: AIRecommendationData;
 };

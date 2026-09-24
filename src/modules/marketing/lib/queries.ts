@@ -3,6 +3,7 @@ import type { MarketingSnapshot, MarketingOportunidad, MarketingRedSocial, Serie
 import { getSqlDataRead } from "@/core/lib/db";
 import { analyzeAtlasSeo } from "../web/ai-analyzer";
 import { analyzeRedesData } from "../redes/ai-analyzer";
+import { fetchGA4Snapshot } from "./ga4";
 
 type Sql = ReturnType<typeof postgres>;
 
@@ -153,6 +154,7 @@ export async function buildMarketingSnapshot(sql?: Sql): Promise<MarketingSnapsh
     postsProgramados: estadoMap.get("PROGRAMADO") ?? 0,
     postsPublicados: estadoMap.get("PUBLICADO") ?? 0,
     seriesRedes,
+    bloqbaseNet: null,
   };
 
   // Agregar análisis de IA. El analizador de Atlas SEO reemplaza al genérico
@@ -160,6 +162,12 @@ export async function buildMarketingSnapshot(sql?: Sql): Promise<MarketingSnapsh
   // ver la nota en web/ai-analyzer.ts sobre esta transición.
   snapshot.aiAnalysis = analyzeAtlasSeo(snapshot);
   snapshot.redesAnalysis = analyzeRedesData(snapshot.seriesRedes);
+
+  const ga4 = await fetchGA4Snapshot();
+  snapshot.bloqbaseNet = ga4
+    ? { disponible: true, usuarios30d: ga4.usuarios30d, sesiones30d: ga4.sesiones30d }
+    : null;
+  // snapshot.bloqbaseNetAnalysis se conecta en una tarea posterior (analyzeBloqbaseNet)
 
   return snapshot;
 }
