@@ -4,6 +4,7 @@ export type MarketingOportunidad = {
   score: number | null;
   estado: string;
   detectadaPorIa: boolean;
+  url: string | null; // página/URL afectada (seo.opportunities.url)
 };
 
 export type MarketingRedSocial = {

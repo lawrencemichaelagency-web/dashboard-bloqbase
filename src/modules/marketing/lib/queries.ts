@@ -44,7 +44,7 @@ export async function buildMarketingSnapshot(sql?: Sql): Promise<MarketingSnapsh
   `);
 
   const opportunities = await safe("opportunities", () => sqlRead`
-    select id, tipo, score, estado, fuente
+    select id, tipo, score, estado, fuente, url
     from seo.opportunities
     where estado = 'PENDIENTE'
     order by score desc nulls last
@@ -145,6 +145,7 @@ export async function buildMarketingSnapshot(sql?: Sql): Promise<MarketingSnapsh
         score: row.score != null ? Number(row.score) : null,
         estado: String(row.estado),
         detectadaPorIa: row.fuente === "MOTOR",
+        url: row.url != null ? String(row.url) : null,
       })
     ),
     redes: Array.from(canales.values()),

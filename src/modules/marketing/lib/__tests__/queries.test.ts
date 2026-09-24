@@ -10,7 +10,7 @@ function createMockSql() {
     [{ clicks_30d: 320, impresiones_30d: 5100, posicion_media: 18.4 }], // traffic
     [{ publicadas: 40, total: 55 }], // coverage
     [{ iniciados: 12, completados: 5 }], // forms
-    [{ id: "1", tipo: "CREATE_PAGE", score: 82.5, estado: "PENDIENTE", fuente: "MOTOR" }], // opportunities
+    [{ id: "1", tipo: "CREATE_PAGE", score: 82.5, estado: "PENDIENTE", fuente: "MOTOR", url: "/blog/mi-pagina" }], // opportunities
     [{ semana: "2024-09-01", clicks: 10 }, { semana: "2024-09-08", clicks: 20 }], // spark
     [{ canal: "linkedin", metric_name: "Reach", total: 900 }], // social
     [{ canal: "linkedin", posts: 6 }], // socialPosts
@@ -41,9 +41,28 @@ describe("buildMarketingSnapshot", () => {
     expect(snapshot.oportunidades[0].score).toBe(82.5);
     expect(snapshot.oportunidades[0].estado).toBe("PENDIENTE");
     expect(snapshot.oportunidades[0].detectadaPorIa).toBe(true);
+    expect(snapshot.oportunidades[0].url).toBe("/blog/mi-pagina");
     expect(snapshot.redes[0].canal).toBe("linkedin");
     expect(snapshot.redes[0].posts).toBe(6);
     expect(snapshot.redes[0].alcance).toBe(900);
     expect(snapshot.sparkClicks12Sem).toEqual([10, 20]);
+  });
+
+  it("maps a null url to null, not to a string 'null' or undefined", async () => {
+    let callCount = 0;
+    const responses = [
+      [{ clicks_30d: 0, impresiones_30d: 0, posicion_media: null }],
+      [{ publicadas: 0, total: 0 }],
+      [{ iniciados: 0, completados: 0 }],
+      [{ id: "2", tipo: "CLUSTER_SIN_COBERTURA", score: 50, estado: "PENDIENTE", fuente: "MANUAL", url: null }],
+      [],
+      [],
+      [],
+      [],
+      [],
+    ];
+    const sql = vi.fn(async () => responses[callCount++] || []) as unknown as Parameters<typeof buildMarketingSnapshot>[0];
+    const snapshot = await buildMarketingSnapshot(sql);
+    expect(snapshot.oportunidades[0].url).toBeNull();
   });
 });
