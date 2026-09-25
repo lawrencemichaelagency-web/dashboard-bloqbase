@@ -1,17 +1,6 @@
 "use client";
 
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Line,
-  LineChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
-import type { GscPageRow } from "../lib/gsc";
+import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 const tooltipStyle = {
   borderRadius: 10,
@@ -73,40 +62,6 @@ export function Ga4DailyChart({ series }: { series: { fecha: string; usuarios: n
             <Line type="monotone" dataKey="usuarios" name="Usuarios" stroke="#16A085" strokeWidth={2} dot={false} />
             <Line type="monotone" dataKey="sesiones" name="Sesiones" stroke="#F5B700" strokeWidth={2} dot={false} />
           </LineChart>
-        </ResponsiveContainer>
-      </div>
-    </div>
-  );
-}
-
-export function TopPagesBarChart({ rows }: { rows: GscPageRow[] }) {
-  if (rows.length === 0) return null;
-
-  const data = rows
-    .slice(0, 10)
-    .map((r) => ({ ...r, urlCorta: r.url.replace(/^https?:\/\/[^/]+/, "") || "/" }));
-
-  return (
-    <div className="bq-card">
-      <div className="font-display text-[16px] font-semibold tracking-[-0.02em]">
-        Top 10 páginas por clicks
-      </div>
-      <div className="mt-[14px] w-full" style={{ height: Math.max(220, data.length * 32) }}>
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data} layout="vertical" margin={{ top: 4, right: 24, left: 8, bottom: 4 }}>
-            <CartesianGrid stroke="var(--separador)" horizontal={false} />
-            <XAxis type="number" tick={axisTick} axisLine={false} tickLine={false} />
-            <YAxis
-              type="category"
-              dataKey="urlCorta"
-              width={160}
-              tick={{ ...axisTick, fontSize: 10 }}
-              axisLine={false}
-              tickLine={false}
-            />
-            <Tooltip contentStyle={tooltipStyle} />
-            <Bar dataKey="clicks" name="Clicks" fill="#1A1A18" radius={[0, 4, 4, 0]} />
-          </BarChart>
         </ResponsiveContainer>
       </div>
     </div>

@@ -22,11 +22,12 @@ const VALID_TABS = new Set(["resumen", "web", "redes", "newsletter"]);
 export default async function MarketingPage({
   searchParams,
 }: {
-  searchParams: Promise<{ tab?: string; sitio?: string }>;
+  searchParams: Promise<{ tab?: string; sitio?: string; fuente?: string }>;
 }) {
-  const { tab, sitio } = await searchParams;
+  const { tab, sitio, fuente } = await searchParams;
   const activeTab = tab && VALID_TABS.has(tab) ? tab : "resumen";
   const activeSitio = sitio === "atlas" ? "atlas" : "bloqbase";
+  const activeFuente = fuente === "ga4" ? "ga4" : "seo";
 
   let snapshot = null;
   try {
@@ -48,7 +49,7 @@ export default async function MarketingPage({
         <Tabs items={TAB_ITEMS} activeKey={activeTab} basePath="/marketing" />
 
         {activeTab === "resumen" && <ResumenTab snapshot={snapshot} />}
-        {activeTab === "web" && <WebTab snapshot={snapshot} sitio={activeSitio} />}
+        {activeTab === "web" && <WebTab snapshot={snapshot} sitio={activeSitio} fuente={activeFuente} />}
         {activeTab === "redes" && <RedesTab snapshot={snapshot} />}
         {activeTab === "newsletter" && <NewsletterTab snapshot={snapshot} />}
       </div>
