@@ -28,6 +28,7 @@ export type BloqbaseNetSnapshot = {
   usuarios30d: number;
   sesiones30d: number;
   seriesDiaria: { fecha: string; usuarios: number; sesiones: number }[];
+  topPages: GA4PageRow[];
 };
 
 export type NewsletterSnapshot = {

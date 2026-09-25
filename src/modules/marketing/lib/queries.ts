@@ -4,7 +4,7 @@ import type { MarketingSnapshot, MarketingOportunidad, MarketingRedSocial, Serie
 import { getSqlDataRead } from "@/core/lib/db";
 import { analyzeAtlasSeo, analyzeBloqbaseNet } from "../web/ai-analyzer";
 import { analyzeRedesData } from "../redes/ai-analyzer";
-import { fetchGA4Snapshot } from "./ga4";
+import { fetchGA4Snapshot, fetchGA4TopPages } from "./ga4";
 import { fetchGscSnapshot, fetchGscTopPages, fetchGscDailySeries } from "./gsc";
 import { fetchBeehiivSnapshot } from "../newsletter/beehiiv";
 import { analyzeNewsletter } from "../newsletter/ai-analyzer";
@@ -46,6 +46,8 @@ async function buildMarketingSnapshotUncached(sql?: Sql): Promise<MarketingSnaps
     gscTopPagesAtlas,
     gscSeriesBloqbaseNet,
     gscSeriesAtlas,
+    ga4TopPagesBloqbaseNet,
+    ga4TopPagesAtlas,
   ] = await Promise.all([
     safe("coverage", () => sqlRead`
       select
@@ -113,6 +115,8 @@ async function buildMarketingSnapshotUncached(sql?: Sql): Promise<MarketingSnaps
     fetchGscTopPages("atlas.bloqbase.net"),
     fetchGscDailySeries("bloqbase.net"),
     fetchGscDailySeries("atlas.bloqbase.net"),
+    fetchGA4TopPages(),
+    fetchGA4TopPages("atlas.bloqbase.net"),
   ]);
 
   const canales = new Map<string, MarketingRedSocial>();
@@ -157,10 +161,22 @@ async function buildMarketingSnapshotUncached(sql?: Sql): Promise<MarketingSnaps
     : { disponible: false, clicks30d: 0, impresiones30d: 0, posicionMedia: null, topPages: [], seriesDiaria: [] };
 
   const bloqbaseNetGa4 = ga4
-    ? { disponible: true as const, usuarios30d: ga4.usuarios30d, sesiones30d: ga4.sesiones30d, seriesDiaria: ga4.seriesDiaria }
+    ? {
+        disponible: true as const,
+        usuarios30d: ga4.usuarios30d,
+        sesiones30d: ga4.sesiones30d,
+        seriesDiaria: ga4.seriesDiaria,
+        topPages: ga4TopPagesBloqbaseNet,
+      }
     : null;
   const atlasGa4 = ga4Atlas
-    ? { disponible: true as const, usuarios30d: ga4Atlas.usuarios30d, sesiones30d: ga4Atlas.sesiones30d, seriesDiaria: ga4Atlas.seriesDiaria }
+    ? {
+        disponible: true as const,
+        usuarios30d: ga4Atlas.usuarios30d,
+        sesiones30d: ga4Atlas.sesiones30d,
+        seriesDiaria: ga4Atlas.seriesDiaria,
+        topPages: ga4TopPagesAtlas,
+      }
     : null;
 
   const bloqbaseNetSite: WebSiteSnapshot = { seo: bloqbaseNetSeo, ga4: bloqbaseNetGa4 };

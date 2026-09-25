@@ -109,7 +109,7 @@ describe("buildMarketingSnapshot", () => {
     });
     const sql = createMockSql();
     const snapshot = await buildMarketingSnapshot(sql);
-    expect(snapshot.bloqbaseNetSite.ga4).toEqual({ disponible: true, usuarios30d: 500, sesiones30d: 700, seriesDiaria: [] });
+    expect(snapshot.bloqbaseNetSite.ga4).toEqual({ disponible: true, usuarios30d: 500, sesiones30d: 700, seriesDiaria: [], topPages: [] });
     expect(snapshot.bloqbaseNetSite.ga4Analysis).toBeDefined();
   });
 

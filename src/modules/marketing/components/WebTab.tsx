@@ -5,7 +5,7 @@ import { EmptyState } from "@/core/components/EmptyState";
 import { MarketingAIRecommendation } from "./MarketingAIRecommendation";
 import { GscDailyChart, Ga4DailyChart, TopPagesBarChart } from "./WebCharts";
 import type { GscPageRow } from "../lib/gsc";
-import type { MarketingSnapshot, WebSiteSnapshot } from "../lib/types";
+import type { GA4PageRow, MarketingSnapshot, WebSiteSnapshot } from "../lib/types";
 
 const TOP_PAGES_LIMIT = 10;
 
@@ -127,6 +127,26 @@ function SiteView({
             {snapshot.ga4Analysis && <MarketingAIRecommendation data={snapshot.ga4Analysis} />}
             <div className="mt-[24px]">
               <Ga4DailyChart series={snapshot.ga4.seriesDiaria} />
+            </div>
+            <div className="mt-[24px]">
+              {snapshot.ga4.topPages.length > 0 ? (
+                <SortableTable<GA4PageRow>
+                  title="Top 10 páginas por visitas (GA4)"
+                  count={String(Math.min(snapshot.ga4.topPages.length, TOP_PAGES_LIMIT)).padStart(2, "0")}
+                  rowKeyField="pagePath"
+                  defaultSortIndex={1}
+                  columns={[
+                    { key: "pagePath", header: "Página", format: "text" },
+                    { key: "vistas", header: "Vistas", align: "right", format: "number" },
+                    { key: "sesiones", header: "Sesiones", align: "right", format: "number" },
+                    { key: "duracionMediaSegundos", header: "Duración media", align: "right", format: "seconds" },
+                    { key: "engagementRate", header: "Engagement", align: "right", format: "percent" },
+                  ]}
+                  rows={snapshot.ga4.topPages.slice(0, TOP_PAGES_LIMIT)}
+                />
+              ) : (
+                <EmptyState title="Sin datos de páginas GA4" description="No hay datos de páginas individuales en los últimos 30 días." />
+              )}
             </div>
           </>
         ) : (
