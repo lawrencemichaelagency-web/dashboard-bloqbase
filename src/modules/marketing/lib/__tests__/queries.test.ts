@@ -5,6 +5,10 @@ vi.mock("../ga4", () => ({
   fetchGA4Snapshot: vi.fn(async () => null),
 }));
 
+vi.mock("../newsletter/beehiiv", () => ({
+  fetchBeehiivSnapshot: vi.fn(async () => null),
+}));
+
 function createMockSql() {
   let callCount = 0;
   // Orden real de queries en buildMarketingSnapshot: traffic, coverage,
@@ -94,5 +98,12 @@ describe("buildMarketingSnapshot", () => {
     const snapshot = await buildMarketingSnapshot(sql);
     expect(snapshot.bloqbaseNet).toEqual({ disponible: true, usuarios30d: 500, sesiones30d: 700 });
     expect(snapshot.bloqbaseNetAnalysis).toBeDefined();
+  });
+
+  it("returns newsletter: null when Beehiiv is not connected", async () => {
+    const sql = createMockSql();
+    const snapshot = await buildMarketingSnapshot(sql);
+    expect(snapshot.newsletter).toBeNull();
+    expect(snapshot.newsletterAnalysis).toBeUndefined();
   });
 });

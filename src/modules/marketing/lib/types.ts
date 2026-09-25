@@ -29,6 +29,13 @@ export type BloqbaseNetSnapshot = {
   sesiones30d: number;
 };
 
+export type NewsletterSnapshot = {
+  disponible: true;
+  suscriptoresActivos: number;
+  averageClickRate: number;
+  ultimosEnvios: { id: string; titulo: string; fechaPublicacion: string; urlWeb: string | null; recipients: number; clickRate: number; clicksWeb: number; bajas: number }[];
+};
+
 import type { AIRecommendationData } from "@/core/types/ai";
 
 export type MarketingSnapshot = {
@@ -52,4 +59,6 @@ export type MarketingSnapshot = {
   redesAnalysis?: AIRecommendationData;
   bloqbaseNet: BloqbaseNetSnapshot | null; // null = no conectado (GA4_PROPERTY_ID ausente)
   bloqbaseNetAnalysis?: AIRecommendationData;
+  newsletter: NewsletterSnapshot | null; // null = no conectado (BEEHIIV_API_KEY o BEEHIIV_PUBLICATION_ID ausentes, o fallo de red)
+  newsletterAnalysis?: AIRecommendationData;
 };
