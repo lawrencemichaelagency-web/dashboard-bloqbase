@@ -46,6 +46,7 @@ export function SortableTable<T>({
   rowKeyField,
   defaultSortIndex = 0,
   defaultSortDesc = true,
+  initialVisibleRows,
 }: {
   title: string;
   count?: string;
@@ -54,9 +55,11 @@ export function SortableTable<T>({
   rowKeyField: keyof T;
   defaultSortIndex?: number;
   defaultSortDesc?: boolean;
+  initialVisibleRows?: number; // si se define, muestra solo esta cantidad con un botón "Ver más" para el resto
 }) {
   const [sortIndex, setSortIndex] = useState(defaultSortIndex);
   const [sortDesc, setSortDesc] = useState(defaultSortDesc);
+  const [expanded, setExpanded] = useState(false);
 
   const sortedRows = [...rows].sort((a, b) => {
     const col = columns[sortIndex];
@@ -65,6 +68,9 @@ export function SortableTable<T>({
     const cmp = typeof va === "number" && typeof vb === "number" ? va - vb : String(va).localeCompare(String(vb));
     return sortDesc ? -cmp : cmp;
   });
+
+  const hasMore = initialVisibleRows != null && sortedRows.length > initialVisibleRows;
+  const visibleRows = hasMore && !expanded ? sortedRows.slice(0, initialVisibleRows) : sortedRows;
 
   function handleSort(index: number) {
     if (index === sortIndex) {
@@ -100,7 +106,7 @@ export function SortableTable<T>({
             </tr>
           </thead>
           <tbody>
-            {sortedRows.map((row) => (
+            {visibleRows.map((row) => (
               <tr key={String(row[rowKeyField])} className="bq-tbody-row">
                 {columns.map((col) => (
                   <td
@@ -118,6 +124,17 @@ export function SortableTable<T>({
       {rows.length === 0 ? (
         <div className="p-[24px] text-center text-[13px] text-[rgba(26,26,24,0.5)]">
           Sin filas que mostrar.
+        </div>
+      ) : null}
+      {hasMore ? (
+        <div className="border-t border-[color:var(--separador)] p-[12px] text-center">
+          <button
+            type="button"
+            onClick={() => setExpanded((prev) => !prev)}
+            className="font-mono-face text-[11px] font-bold uppercase tracking-[0.1em] text-[rgba(26,26,24,0.62)] hover:text-[color:var(--grafito)]"
+          >
+            {expanded ? "Ver menos" : `Ver ${sortedRows.length - (initialVisibleRows ?? 0)} más`}
+          </button>
         </div>
       ) : null}
     </div>

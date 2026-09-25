@@ -8,6 +8,7 @@ import type { GscPageRow } from "../lib/gsc";
 import type { GA4PageRow, MarketingSnapshot, WebSiteSnapshot } from "../lib/types";
 
 const TOP_PAGES_LIMIT = 10;
+const TOP_PAGES_INITIAL = 5;
 
 export type WebSitio = "bloqbase" | "atlas";
 export type WebFuente = "seo" | "ga4";
@@ -126,6 +127,7 @@ function SeoView({
             count={String(Math.min(seo.topPages.length, TOP_PAGES_LIMIT)).padStart(2, "0")}
             rowKeyField="url"
             defaultSortIndex={1}
+            initialVisibleRows={TOP_PAGES_INITIAL}
             columns={[
               { key: "url", header: "URL", format: "text" },
               { key: "clicks", header: "Clicks", align: "right", format: "number" },
@@ -172,6 +174,7 @@ function Ga4View({ snapshot }: { snapshot: WebSiteSnapshot | null }) {
             count={String(Math.min(ga4.topPages.length, TOP_PAGES_LIMIT)).padStart(2, "0")}
             rowKeyField="pagePath"
             defaultSortIndex={1}
+            initialVisibleRows={TOP_PAGES_INITIAL}
             columns={[
               { key: "pagePath", header: "Página", format: "text" },
               { key: "vistas", header: "Vistas", align: "right", format: "number" },

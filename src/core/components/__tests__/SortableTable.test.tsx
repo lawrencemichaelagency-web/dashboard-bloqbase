@@ -88,4 +88,29 @@ describe("SortableTable", () => {
     expect(cells[0].textContent).toBe("25.60%");
     expect(cells[1].textContent).toBe("124s");
   });
+
+  it("shows only initialVisibleRows rows and a 'Ver más' button when there are more", () => {
+    const { container } = render(
+      <SortableTable<Row> title="Test" columns={columns} rows={rows} rowKeyField="id" initialVisibleRows={2} />
+    );
+    expect(container.querySelectorAll(".bq-tbody-row")).toHaveLength(2);
+    expect(within(container).getByText("Ver 1 más")).toBeInTheDocument();
+  });
+
+  it("expands to show all rows when 'Ver más' is clicked, and can collapse again", () => {
+    const { container } = render(
+      <SortableTable<Row> title="Test" columns={columns} rows={rows} rowKeyField="id" initialVisibleRows={2} />
+    );
+    fireEvent.click(within(container).getByText("Ver 1 más"));
+    expect(container.querySelectorAll(".bq-tbody-row")).toHaveLength(3);
+    fireEvent.click(within(container).getByText("Ver menos"));
+    expect(container.querySelectorAll(".bq-tbody-row")).toHaveLength(2);
+  });
+
+  it("does not show a 'Ver más' button when initialVisibleRows is omitted or covers all rows", () => {
+    const { container } = render(
+      <SortableTable<Row> title="Test" columns={columns} rows={rows} rowKeyField="id" />
+    );
+    expect(within(container).queryByText(/Ver \d+ más/)).not.toBeInTheDocument();
+  });
 });
