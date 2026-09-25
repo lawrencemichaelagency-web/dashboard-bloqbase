@@ -4,7 +4,7 @@ import type { MarketingSnapshot, MarketingOportunidad, MarketingRedSocial, Serie
 import { getSqlDataRead } from "@/core/lib/db";
 import { analyzeAtlasSeo, analyzeBloqbaseNet } from "../web/ai-analyzer";
 import { analyzeRedesData } from "../redes/ai-analyzer";
-import { fetchGA4Snapshot, fetchGA4TopPages } from "./ga4";
+import { fetchGA4Snapshot } from "./ga4";
 import { fetchGscSnapshot, fetchGscTopPages } from "./gsc";
 import { fetchBeehiivSnapshot } from "../newsletter/beehiiv";
 import { analyzeNewsletter } from "../newsletter/ai-analyzer";
@@ -38,8 +38,8 @@ async function buildMarketingSnapshotUncached(sql?: Sql): Promise<MarketingSnaps
     postsPorEstado,
     seriesRaw,
     ga4,
+    ga4Atlas,
     beehiiv,
-    ga4TopPages,
     gscSnapshotBloqbaseNet,
     gscSnapshotAtlas,
     gscTopPagesBloqbaseNet,
@@ -103,8 +103,8 @@ async function buildMarketingSnapshotUncached(sql?: Sql): Promise<MarketingSnaps
       order by 1
     `),
     fetchGA4Snapshot(),
+    fetchGA4Snapshot("atlas.bloqbase.net"),
     fetchBeehiivSnapshot(),
-    fetchGA4TopPages(),
     fetchGscSnapshot("bloqbase.net"),
     fetchGscSnapshot("atlas.bloqbase.net"),
     fetchGscTopPages("bloqbase.net"),
@@ -153,9 +153,10 @@ async function buildMarketingSnapshotUncached(sql?: Sql): Promise<MarketingSnaps
     : { disponible: false, clicks30d: 0, impresiones30d: 0, posicionMedia: null, topPages: [] };
 
   const bloqbaseNetGa4 = ga4 ? { disponible: true as const, usuarios30d: ga4.usuarios30d, sesiones30d: ga4.sesiones30d } : null;
+  const atlasGa4 = ga4Atlas ? { disponible: true as const, usuarios30d: ga4Atlas.usuarios30d, sesiones30d: ga4Atlas.sesiones30d } : null;
 
   const bloqbaseNetSite: WebSiteSnapshot = { seo: bloqbaseNetSeo, ga4: bloqbaseNetGa4 };
-  const atlasSite: WebSiteSnapshot = { seo: atlasSeo, ga4: null };
+  const atlasSite: WebSiteSnapshot = { seo: atlasSeo, ga4: atlasGa4 };
 
   const snapshot: MarketingSnapshot = {
     fecha: new Date().toISOString().slice(0, 10),

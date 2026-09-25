@@ -1,5 +1,13 @@
 import { google } from "googleapis";
 
+export type GA4Site = "bloqbase.net" | "atlas.bloqbase.net";
+
+function propertyIdFor(site: GA4Site): string | undefined {
+  return site === "atlas.bloqbase.net"
+    ? process.env.GA4_PROPERTY_ID_ATLAS
+    : process.env.GA4_PROPERTY_ID;
+}
+
 export type GA4Snapshot = {
   disponible: true;
   usuarios30d: number;
@@ -32,8 +40,8 @@ function getGA4Auth() {
  * 3. Obtener el Property ID numérico (Admin > Property details) y
  *    añadirlo como GA4_PROPERTY_ID en .env.local y en Vercel.
  */
-export async function fetchGA4Snapshot(): Promise<GA4Snapshot | null> {
-  const propertyId = process.env.GA4_PROPERTY_ID;
+export async function fetchGA4Snapshot(site: GA4Site = "bloqbase.net"): Promise<GA4Snapshot | null> {
+  const propertyId = propertyIdFor(site);
   if (!propertyId) return null;
 
   try {
@@ -94,8 +102,8 @@ export type GA4PageRow = {
  * Mismo patrón de nunca lanzar que fetchGA4Snapshot(): retorna [] si no hay
  * credenciales o si la llamada falla, nunca null/undefined ni excepción.
  */
-export async function fetchGA4TopPages(): Promise<GA4PageRow[]> {
-  const propertyId = process.env.GA4_PROPERTY_ID;
+export async function fetchGA4TopPages(site: GA4Site = "bloqbase.net"): Promise<GA4PageRow[]> {
+  const propertyId = propertyIdFor(site);
   if (!propertyId) return [];
 
   try {
