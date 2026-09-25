@@ -13,7 +13,10 @@ export function ResumenTab({ snapshot }: { snapshot: MarketingSnapshot | null })
         label="Impresiones en redes"
         value={snapshot && snapshot.seriesRedes.length > 0 ? "Con datos" : "Sin datos"}
       />
-      <MetricCard label="Newsletter" value="No conectado" />
+      <MetricCard
+        label="Suscriptores newsletter"
+        value={snapshot?.newsletter ? String(snapshot.newsletter.suscriptoresActivos) : "No conectado"}
+      />
       <MetricCard label="Cold Email" value="No conectado" />
       <MetricCard label="Ads" value="No conectado" />
     </div>
