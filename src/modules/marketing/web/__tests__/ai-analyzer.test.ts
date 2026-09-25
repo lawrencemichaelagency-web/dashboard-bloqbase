@@ -24,6 +24,8 @@ describe("Atlas SEO Analyzer (Growth > Web)", () => {
     seriesRedes: [],
     bloqbaseNet: null,
     newsletter: null,
+    ga4TopPages: [],
+    atlasTopPages: [],
   };
 
   it("diagnoses low CTR as the dominant bottleneck when impressions are high but clicks are low", () => {

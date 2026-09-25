@@ -36,6 +36,22 @@ export type NewsletterSnapshot = {
   ultimosEnvios: { id: string; titulo: string; fechaPublicacion: string; urlWeb: string | null; recipients: number; clickRate: number; clicksWeb: number; bajas: number }[];
 };
 
+export type GA4PageRow = {
+  pagePath: string;
+  vistas: number;
+  sesiones: number;
+  duracionMediaSegundos: number;
+  engagementRate: number;
+};
+
+export type AtlasPageRow = {
+  url: string;
+  clicks: number;
+  impressions: number;
+  ctr: number;
+  posicionMedia: number | null;
+};
+
 import type { AIRecommendationData } from "@/core/types/ai";
 
 export type MarketingSnapshot = {
@@ -61,4 +77,6 @@ export type MarketingSnapshot = {
   bloqbaseNetAnalysis?: AIRecommendationData;
   newsletter: NewsletterSnapshot | null; // null = no conectado (BEEHIIV_API_KEY o BEEHIIV_PUBLICATION_ID ausentes, o fallo de red)
   newsletterAnalysis?: AIRecommendationData;
+  ga4TopPages: GA4PageRow[]; // [] si GA4 no está conectado o sin datos -- nunca simulado
+  atlasTopPages: AtlasPageRow[]; // [] si la query falla -- nunca simulado
 };
