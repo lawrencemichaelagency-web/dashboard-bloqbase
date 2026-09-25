@@ -80,3 +80,55 @@ export async function fetchGA4Snapshot(): Promise<GA4Snapshot | null> {
     return null;
   }
 }
+
+export type GA4PageRow = {
+  pagePath: string;
+  vistas: number;
+  sesiones: number;
+  duracionMediaSegundos: number;
+  engagementRate: number; // 0-1
+};
+
+/**
+ * Top páginas de bloqbase.net por vistas (GA4 Data API), últimos 30 días.
+ * Mismo patrón de nunca lanzar que fetchGA4Snapshot(): retorna [] si no hay
+ * credenciales o si la llamada falla, nunca null/undefined ni excepción.
+ */
+export async function fetchGA4TopPages(): Promise<GA4PageRow[]> {
+  const propertyId = process.env.GA4_PROPERTY_ID;
+  if (!propertyId) return [];
+
+  try {
+    const auth = getGA4Auth();
+    if (!auth) return [];
+
+    const analyticsdata = google.analyticsdata({ version: "v1beta", auth });
+
+    const result = await analyticsdata.properties.runReport({
+      property: `properties/${propertyId}`,
+      requestBody: {
+        dateRanges: [{ startDate: "30daysAgo", endDate: "today" }],
+        dimensions: [{ name: "pagePath" }],
+        metrics: [
+          { name: "screenPageViews" },
+          { name: "sessions" },
+          { name: "averageSessionDuration" },
+          { name: "engagementRate" },
+        ],
+        orderBys: [{ metric: { metricName: "screenPageViews" }, desc: true }],
+        limit: "20",
+      },
+    });
+
+    return (result.data.rows ?? []).map((row) => ({
+      pagePath: String(row.dimensionValues?.[0]?.value ?? ""),
+      vistas: Number(row.metricValues?.[0]?.value ?? 0),
+      sesiones: Number(row.metricValues?.[1]?.value ?? 0),
+      duracionMediaSegundos: Number(row.metricValues?.[2]?.value ?? 0),
+      engagementRate: Number(row.metricValues?.[3]?.value ?? 0),
+    }));
+  } catch (err) {
+    console.warn("[ga4] failed to fetch top pages", err);
+    return [];
+  }
+}

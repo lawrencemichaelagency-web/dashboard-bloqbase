@@ -80,3 +80,58 @@ describe("fetchGA4Snapshot", () => {
     await expect(fetchGA4Snapshot()).resolves.toBeNull();
   });
 });
+
+describe("fetchGA4TopPages", () => {
+  beforeEach(() => {
+    vi.resetModules();
+    mockRunReport.mockReset();
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("returns [] when GA4_PROPERTY_ID is not set", async () => {
+    vi.stubEnv("GA4_PROPERTY_ID", "");
+    vi.stubEnv("GOOGLE_SERVICE_ACCOUNT_KEY_B64", Buffer.from(JSON.stringify({})).toString("base64"));
+    const { fetchGA4TopPages } = await import("../ga4");
+    const result = await fetchGA4TopPages();
+    expect(result).toEqual([]);
+    expect(mockRunReport).not.toHaveBeenCalled();
+  });
+
+  it("returns well-mapped rows when runReport resolves with the real fixture shape", async () => {
+    vi.stubEnv("GA4_PROPERTY_ID", "123456");
+    vi.stubEnv("GOOGLE_SERVICE_ACCOUNT_KEY_B64", Buffer.from(JSON.stringify({})).toString("base64"));
+    mockRunReport.mockResolvedValueOnce({
+      data: {
+        rows: [
+          {
+            dimensionValues: [{ value: "/es/recursos/analizador-certificaciones-obra" }],
+            metricValues: [{ value: "9" }, { value: "4" }, { value: "1068.360671" }, { value: "0.75" }],
+          },
+        ],
+      },
+    });
+    const { fetchGA4TopPages } = await import("../ga4");
+    const result = await fetchGA4TopPages();
+    expect(result).toEqual([
+      {
+        pagePath: "/es/recursos/analizador-certificaciones-obra",
+        vistas: 9,
+        sesiones: 4,
+        duracionMediaSegundos: 1068.360671,
+        engagementRate: 0.75,
+      },
+    ]);
+  });
+
+  it("returns [] (not throw) when runReport rejects", async () => {
+    vi.stubEnv("GA4_PROPERTY_ID", "123456");
+    vi.stubEnv("GOOGLE_SERVICE_ACCOUNT_KEY_B64", Buffer.from(JSON.stringify({})).toString("base64"));
+    mockRunReport.mockRejectedValue(new Error("API error"));
+    const { fetchGA4TopPages } = await import("../ga4");
+    const result = await fetchGA4TopPages();
+    expect(result).toEqual([]);
+  });
+});

@@ -3,7 +3,8 @@ import type { MarketingSnapshot, MarketingOportunidad, MarketingRedSocial, Serie
 import { getSqlDataRead } from "@/core/lib/db";
 import { analyzeAtlasSeo, analyzeBloqbaseNet } from "../web/ai-analyzer";
 import { analyzeRedesData } from "../redes/ai-analyzer";
-import { fetchGA4Snapshot } from "./ga4";
+import { fetchGA4Snapshot, fetchGA4TopPages } from "./ga4";
+import { fetchAtlasTopPages } from "./atlas-pages";
 import { fetchBeehiivSnapshot } from "../newsletter/beehiiv";
 import { analyzeNewsletter } from "../newsletter/ai-analyzer";
 
@@ -158,6 +159,8 @@ export async function buildMarketingSnapshot(sql?: Sql): Promise<MarketingSnapsh
     seriesRedes,
     bloqbaseNet: null, // placeholder; se sobreescribe abajo tras fetchGA4Snapshot() (el tipo no es opcional)
     newsletter: null, // placeholder; se sobreescribe abajo tras fetchBeehiivSnapshot() (el tipo no es opcional)
+    ga4TopPages: [], // placeholder; se sobreescribe abajo tras fetchGA4TopPages()
+    atlasTopPages: [], // placeholder; se sobreescribe abajo tras fetchAtlasTopPages()
   };
 
   // Agregar análisis de IA. El analizador de Atlas SEO reemplaza al genérico
@@ -188,6 +191,9 @@ export async function buildMarketingSnapshot(sql?: Sql): Promise<MarketingSnapsh
       }
     : null;
   snapshot.newsletterAnalysis = beehiiv ? analyzeNewsletter(beehiiv) : undefined;
+
+  snapshot.ga4TopPages = await fetchGA4TopPages();
+  snapshot.atlasTopPages = await fetchAtlasTopPages(sqlRead);
 
   return snapshot;
 }

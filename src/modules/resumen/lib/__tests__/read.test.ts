@@ -32,6 +32,8 @@ describe("readLatestSnapshots", () => {
       seriesRedes: [],
       bloqbaseNet: null,
       newsletter: null,
+      ga4TopPages: [],
+      atlasTopPages: [],
     });
     vi.mocked(buildLlamadasSnapshot).mockResolvedValue({
       llamadas7d: 5,

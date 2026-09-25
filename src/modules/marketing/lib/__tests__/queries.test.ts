@@ -3,6 +3,11 @@ import { buildMarketingSnapshot } from "../queries";
 
 vi.mock("../ga4", () => ({
   fetchGA4Snapshot: vi.fn(async () => null),
+  fetchGA4TopPages: vi.fn(async () => []),
+}));
+
+vi.mock("../atlas-pages", () => ({
+  fetchAtlasTopPages: vi.fn(async () => []),
 }));
 
 vi.mock("../newsletter/beehiiv", () => ({
@@ -105,5 +110,14 @@ describe("buildMarketingSnapshot", () => {
     const snapshot = await buildMarketingSnapshot(sql);
     expect(snapshot.newsletter).toBeNull();
     expect(snapshot.newsletterAnalysis).toBeUndefined();
+  });
+
+  it("includes ga4TopPages and atlasTopPages as arrays in the snapshot", async () => {
+    const sql = createMockSql();
+    const snapshot = await buildMarketingSnapshot(sql);
+    expect(Array.isArray(snapshot.ga4TopPages)).toBe(true);
+    expect(Array.isArray(snapshot.atlasTopPages)).toBe(true);
+    expect(snapshot.ga4TopPages).toEqual([]);
+    expect(snapshot.atlasTopPages).toEqual([]);
   });
 });
