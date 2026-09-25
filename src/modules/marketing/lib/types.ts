@@ -44,21 +44,26 @@ export type GA4PageRow = {
   engagementRate: number;
 };
 
-export type AtlasPageRow = {
-  url: string;
-  clicks: number;
-  impressions: number;
-  ctr: number;
-  posicionMedia: number | null;
-};
-
 import type { AIRecommendationData } from "@/core/types/ai";
+import type { GscPageRow } from "./gsc";
 
-export type MarketingSnapshot = {
-  fecha: string | Date;
+export type SeoSiteSnapshot = {
+  disponible: boolean; // false si fetchGscSnapshot devolvió null
   clicks30d: number;
   impresiones30d: number;
   posicionMedia: number | null;
+  topPages: GscPageRow[];
+};
+
+export type WebSiteSnapshot = {
+  seo: SeoSiteSnapshot;
+  ga4: BloqbaseNetSnapshot | null; // null = no conectado
+  ga4Analysis?: AIRecommendationData;
+  seoAnalysis?: AIRecommendationData;
+};
+
+export type MarketingSnapshot = {
+  fecha: string | Date;
   paginasPublicadas: number;
   paginasTotal: number;
   formulariosIniciados30d: number;
@@ -73,10 +78,8 @@ export type MarketingSnapshot = {
   seriesRedes: SerieRedSocialPunto[];
   aiAnalysis?: AIRecommendationData;
   redesAnalysis?: AIRecommendationData;
-  bloqbaseNet: BloqbaseNetSnapshot | null; // null = no conectado (GA4_PROPERTY_ID ausente)
-  bloqbaseNetAnalysis?: AIRecommendationData;
   newsletter: NewsletterSnapshot | null; // null = no conectado (BEEHIIV_API_KEY o BEEHIIV_PUBLICATION_ID ausentes, o fallo de red)
   newsletterAnalysis?: AIRecommendationData;
-  ga4TopPages: GA4PageRow[]; // [] si GA4 no está conectado o sin datos -- nunca simulado
-  atlasTopPages: AtlasPageRow[]; // [] si la query falla -- nunca simulado
+  bloqbaseNetSite: WebSiteSnapshot;
+  atlasSite: WebSiteSnapshot;
 };

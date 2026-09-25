@@ -62,7 +62,7 @@ export default async function ResumenPage() {
         <div className="mt-[32px] grid grid-cols-1 gap-[16px] sm:grid-cols-2 lg:grid-cols-3">
           <MetricCard
             label="Clicks orgánicos (30d)"
-            value={marketing ? String(marketing.clicks30d) : "—"}
+            value={marketing ? String(marketing.bloqbaseNetSite.seo.clicks30d) : "—"}
           />
           <MetricCard
             label="Oportunidades SEO pendientes"

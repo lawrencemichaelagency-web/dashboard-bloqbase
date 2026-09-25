@@ -24,7 +24,7 @@ export async function GET(request: Request) {
          formularios_iniciados_30d, formularios_completados_30d, oportunidades_pendientes,
          spark_clicks_12sem, oportunidades, redes)
       values
-        (${today}, ${marketing.clicks30d}, ${marketing.impresiones30d}, ${marketing.posicionMedia},
+        (${today}, ${marketing.bloqbaseNetSite.seo.clicks30d}, ${marketing.bloqbaseNetSite.seo.impresiones30d}, ${marketing.bloqbaseNetSite.seo.posicionMedia},
          ${marketing.paginasPublicadas}, ${marketing.paginasTotal}, ${marketing.formulariosIniciados30d},
          ${marketing.formulariosCompletados30d}, ${marketing.oportunidadesPendientes},
          ${JSON.stringify(marketing.sparkClicks12Sem)}, ${JSON.stringify(marketing.oportunidades)},

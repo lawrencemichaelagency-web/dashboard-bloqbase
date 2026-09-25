@@ -1,47 +1,59 @@
-import type { MarketingSnapshot } from "../lib/types";
+import type { MarketingOportunidad, SeoSiteSnapshot } from "../lib/types";
 import type { AIRecommendationData, Recommendation } from "@/core/types/ai";
 import { SIN_SUFICIENTE_SENAL } from "@/core/types/ai";
 import { hasSufficientSignal } from "@/core/lib/ai-engine";
 import type { GA4Snapshot } from "../lib/ga4";
 
 /**
- * Analizador de Growth > Web > atlas.bloqbase.net (documento de arquitectura,
- * sección 8.2). "Growth" es el módulo conceptual del documento; en el código
- * vive bajo `src/modules/marketing/` -- no existe ni está previsto un
- * directorio `growth/` separado.
+ * Analizador de Growth > Web > SEO (Search Console) para un sitio dado
+ * (documento de arquitectura, sección 8.2). "Growth" es el módulo conceptual
+ * del documento; en el código vive bajo `src/modules/marketing/` -- no existe
+ * ni está previsto un directorio `growth/` separado.
  *
- * Solo cubre CTR, oportunidades SEO y cobertura de páginas (Search Console).
+ * Se llama una vez por sitio (bloqbase.net, atlas.bloqbase.net) con los
+ * números de Search Console de ESE sitio -- ya no hay un único "Atlas SEO"
+ * mezclado con datos de otro dominio.
+ *
+ * Solo cubre CTR y oportunidades SEO. La cobertura de páginas
+ * (paginasPublicadas/paginasTotal) es un dato exclusivo de bloqbase.net (via
+ * SQL, sin equivalente todavía para atlas.bloqbase.net), así que se recibe
+ * como parámetro opcional: se pasa solo al analizar bloqbase.net.
+ *
  * La conversión de formularios pertenece a bloqbase.net (sección 8.1) y vive
  * en analyzeBloqbaseNet(), más abajo en este mismo archivo.
  */
-export function analyzeAtlasSeo(snapshot: MarketingSnapshot): AIRecommendationData {
+export function analyzeAtlasSeo(
+  seo: SeoSiteSnapshot,
+  oportunidades: MarketingOportunidad[],
+  coverage?: { paginasPublicadas: number; paginasTotal: number }
+): AIRecommendationData {
   // Regla anti-error (sección 8.2): con pocas impresiones no hay evidencia
   // suficiente para diagnosticar CTR ni cobertura.
-  if (!hasSufficientSignal(snapshot.impresiones30d, 100)) {
+  if (!hasSufficientSignal(seo.impresiones30d, 100)) {
     return SIN_SUFICIENTE_SENAL;
   }
 
   const recommendations: Recommendation[] = [];
-  const ctr = snapshot.impresiones30d > 0 ? snapshot.clicks30d / snapshot.impresiones30d : 0;
+  const ctr = seo.impresiones30d > 0 ? seo.clicks30d / seo.impresiones30d : 0;
   const coveragePercent =
-    snapshot.paginasTotal > 0 ? (snapshot.paginasPublicadas / snapshot.paginasTotal) * 100 : 100;
+    coverage && coverage.paginasTotal > 0 ? (coverage.paginasPublicadas / coverage.paginasTotal) * 100 : 100;
 
-  const highScoreOpportunities = snapshot.oportunidades
+  const highScoreOpportunities = oportunidades
     .filter((o) => o.estado === "PENDIENTE" && o.score != null)
     .sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
 
   let status: "bien" | "atención" | "crítico" = "bien";
-  let headline = "Atlas SEO en buen estado";
+  let headline = "SEO en buen estado";
   let reason = "Clicks, CTR y cobertura están dentro de lo esperado.";
 
   // Cuello de botella dominante: CTR bajo con impresiones y posición competitivas
   // (sección 8.2: "identifica el cuello de botella dominante -- CTR, posición,
   // cobertura, contenido o indexación -- y propone una sola acción principal").
   const ctrEsperado = 0.01; // 1% es un CTR conservador de referencia para posiciones medias/altas
-  if (ctr < ctrEsperado && snapshot.posicionMedia != null && snapshot.posicionMedia < 15) {
+  if (ctr < ctrEsperado && seo.posicionMedia != null && seo.posicionMedia < 15) {
     status = "atención";
     headline = "CTR por debajo de lo esperado para la posición media actual";
-    reason = `Hay ${snapshot.impresiones30d} impresiones con posición media ${snapshot.posicionMedia}, pero el CTR es solo ${(ctr * 100).toFixed(2)}%.`;
+    reason = `Hay ${seo.impresiones30d} impresiones con posición media ${seo.posicionMedia}, pero el CTR es solo ${(ctr * 100).toFixed(2)}%.`;
 
     recommendations.push({
       title: "Mejorar el CTR de las páginas con más impresiones",
@@ -63,7 +75,7 @@ export function analyzeAtlasSeo(snapshot: MarketingSnapshot): AIRecommendationDa
     });
   }
 
-  if (coveragePercent < 80) {
+  if (coverage && coveragePercent < 80) {
     status = status === "bien" ? "atención" : status;
     recommendations.push({
       title: "Publicar las páginas en borrador",

@@ -1,11 +1,11 @@
 import type postgres from "postgres";
 import { unstable_cache } from "next/cache";
-import type { MarketingSnapshot, MarketingOportunidad, MarketingRedSocial, SerieRedSocialPunto } from "./types";
+import type { MarketingSnapshot, MarketingOportunidad, MarketingRedSocial, SerieRedSocialPunto, WebSiteSnapshot, SeoSiteSnapshot } from "./types";
 import { getSqlDataRead } from "@/core/lib/db";
 import { analyzeAtlasSeo, analyzeBloqbaseNet } from "../web/ai-analyzer";
 import { analyzeRedesData } from "../redes/ai-analyzer";
 import { fetchGA4Snapshot, fetchGA4TopPages } from "./ga4";
-import { fetchAtlasTopPages } from "./atlas-pages";
+import { fetchGscSnapshot, fetchGscTopPages } from "./gsc";
 import { fetchBeehiivSnapshot } from "../newsletter/beehiiv";
 import { analyzeNewsletter } from "../newsletter/ai-analyzer";
 
@@ -29,7 +29,6 @@ async function buildMarketingSnapshotUncached(sql?: Sql): Promise<MarketingSnaps
   // sumando ~3.8s por carga; en paralelo el tiempo total es el de la más
   // lenta, no la suma de todas).
   const [
-    traffic,
     coverage,
     forms,
     opportunities,
@@ -41,16 +40,11 @@ async function buildMarketingSnapshotUncached(sql?: Sql): Promise<MarketingSnaps
     ga4,
     beehiiv,
     ga4TopPages,
-    atlasTopPages,
+    gscSnapshotBloqbaseNet,
+    gscSnapshotAtlas,
+    gscTopPagesBloqbaseNet,
+    gscTopPagesAtlas,
   ] = await Promise.all([
-    safe("traffic", () => sqlRead`
-      select
-        coalesce(sum(clicks), 0)::int as clicks_30d,
-        coalesce(sum(impressions), 0)::int as impresiones_30d,
-        round(avg(position), 2) as posicion_media
-      from seo.page_performance_daily
-      where fecha >= current_date - interval '30 days'
-    `),
     safe("coverage", () => sqlRead`
       select
         count(*) filter (where estado = 'LIVE') as publicadas,
@@ -111,7 +105,10 @@ async function buildMarketingSnapshotUncached(sql?: Sql): Promise<MarketingSnaps
     fetchGA4Snapshot(),
     fetchBeehiivSnapshot(),
     fetchGA4TopPages(),
-    fetchAtlasTopPages(sqlRead),
+    fetchGscSnapshot("bloqbase.net"),
+    fetchGscSnapshot("atlas.bloqbase.net"),
+    fetchGscTopPages("bloqbase.net"),
+    fetchGscTopPages("atlas.bloqbase.net"),
   ]);
 
   const canales = new Map<string, MarketingRedSocial>();
@@ -148,11 +145,20 @@ async function buildMarketingSnapshotUncached(sql?: Sql): Promise<MarketingSnaps
     value: Number(row.total),
   }));
 
+  const bloqbaseNetSeo: SeoSiteSnapshot = gscSnapshotBloqbaseNet
+    ? { ...gscSnapshotBloqbaseNet, topPages: gscTopPagesBloqbaseNet }
+    : { disponible: false, clicks30d: 0, impresiones30d: 0, posicionMedia: null, topPages: [] };
+  const atlasSeo: SeoSiteSnapshot = gscSnapshotAtlas
+    ? { ...gscSnapshotAtlas, topPages: gscTopPagesAtlas }
+    : { disponible: false, clicks30d: 0, impresiones30d: 0, posicionMedia: null, topPages: [] };
+
+  const bloqbaseNetGa4 = ga4 ? { disponible: true as const, usuarios30d: ga4.usuarios30d, sesiones30d: ga4.sesiones30d } : null;
+
+  const bloqbaseNetSite: WebSiteSnapshot = { seo: bloqbaseNetSeo, ga4: bloqbaseNetGa4 };
+  const atlasSite: WebSiteSnapshot = { seo: atlasSeo, ga4: null };
+
   const snapshot: MarketingSnapshot = {
     fecha: new Date().toISOString().slice(0, 10),
-    clicks30d: Number(traffic[0]?.clicks_30d ?? 0),
-    impresiones30d: Number(traffic[0]?.impresiones_30d ?? 0),
-    posicionMedia: traffic[0]?.posicion_media != null ? Number(traffic[0].posicion_media) : null,
     paginasPublicadas: Number(coverage[0]?.publicadas ?? 0),
     paginasTotal: Number(coverage[0]?.total ?? 0),
     formulariosIniciados30d: Number(forms[0]?.iniciados ?? 0),
@@ -174,7 +180,6 @@ async function buildMarketingSnapshotUncached(sql?: Sql): Promise<MarketingSnaps
     postsProgramados: estadoMap.get("PROGRAMADO") ?? 0,
     postsPublicados: estadoMap.get("PUBLICADO") ?? 0,
     seriesRedes,
-    bloqbaseNet: ga4 ? { disponible: true, usuarios30d: ga4.usuarios30d, sesiones30d: ga4.sesiones30d } : null,
     newsletter: beehiiv
       ? {
           disponible: true,
@@ -183,16 +188,22 @@ async function buildMarketingSnapshotUncached(sql?: Sql): Promise<MarketingSnaps
           ultimosEnvios: beehiiv.ultimosEnvios,
         }
       : null,
-    ga4TopPages,
-    atlasTopPages,
+    bloqbaseNetSite,
+    atlasSite,
   };
 
-  // Agregar análisis de IA. El analizador de Atlas SEO reemplaza al genérico
-  // en la sección Tráfico (mismo dominio: CTR, oportunidades, cobertura);
-  // ver la nota en web/ai-analyzer.ts sobre esta transición.
-  snapshot.aiAnalysis = analyzeAtlasSeo(snapshot);
+  // Agregar análisis de IA. Cada sitio se analiza con sus propios números de
+  // Search Console -- ya no hay un único "Atlas SEO" mezclando dominios (ver
+  // la nota en web/ai-analyzer.ts sobre esta transición). La cobertura de
+  // páginas (SQL) solo existe para bloqbase.net, así que solo se pasa ahí.
+  snapshot.bloqbaseNetSite.seoAnalysis = analyzeAtlasSeo(bloqbaseNetSeo, snapshot.oportunidades, {
+    paginasPublicadas: snapshot.paginasPublicadas,
+    paginasTotal: snapshot.paginasTotal,
+  });
+  snapshot.atlasSite.seoAnalysis = analyzeAtlasSeo(atlasSeo, snapshot.oportunidades);
+  snapshot.aiAnalysis = snapshot.bloqbaseNetSite.seoAnalysis;
   snapshot.redesAnalysis = analyzeRedesData(snapshot.seriesRedes);
-  snapshot.bloqbaseNetAnalysis = ga4
+  snapshot.bloqbaseNetSite.ga4Analysis = ga4
     ? analyzeBloqbaseNet(ga4, { iniciados: snapshot.formulariosIniciados30d, completados: snapshot.formulariosCompletados30d })
     : undefined;
   snapshot.newsletterAnalysis = beehiiv ? analyzeNewsletter(beehiiv) : undefined;

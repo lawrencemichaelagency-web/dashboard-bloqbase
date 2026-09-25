@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi, beforeEach } from "vitest";
 import { buildMarketingSnapshot } from "../queries";
 
 vi.mock("../ga4", () => ({
@@ -6,8 +6,9 @@ vi.mock("../ga4", () => ({
   fetchGA4TopPages: vi.fn(async () => []),
 }));
 
-vi.mock("../atlas-pages", () => ({
-  fetchAtlasTopPages: vi.fn(async () => []),
+vi.mock("../gsc", () => ({
+  fetchGscSnapshot: vi.fn(async () => null),
+  fetchGscTopPages: vi.fn(async () => []),
 }));
 
 vi.mock("../newsletter/beehiiv", () => ({
@@ -16,11 +17,11 @@ vi.mock("../newsletter/beehiiv", () => ({
 
 function createMockSql() {
   let callCount = 0;
-  // Orden real de queries en buildMarketingSnapshot: traffic, coverage,
-  // forms, opportunities, spark, social, socialPosts, postsPorEstado,
-  // seriesRedes.
+  // Orden real de queries SQL en buildMarketingSnapshot: coverage, forms,
+  // opportunities, spark, social, socialPosts, postsPorEstado, seriesRedes.
+  // (traffic/atlasTopPages ya no son queries SQL -- vienen de fetchGscSnapshot/
+  // fetchGscTopPages, mockeadas arriba).
   const responses = [
-    [{ clicks_30d: 320, impresiones_30d: 5100, posicion_media: 18.4 }], // traffic
     [{ publicadas: 40, total: 55 }], // coverage
     [{ iniciados: 12, completados: 5 }], // forms
     [{ id: "1", tipo: "CREATE_PAGE", score: 82.5, estado: "PENDIENTE", fuente: "MOTOR", url: "/blog/mi-pagina" }], // opportunities
@@ -37,13 +38,18 @@ function createMockSql() {
 }
 
 describe("buildMarketingSnapshot", () => {
-  it("aggregates traffic, coverage, and opportunities into one snapshot", async () => {
+  beforeEach(async () => {
+    const { fetchGscSnapshot, fetchGscTopPages } = await import("../gsc");
+    vi.mocked(fetchGscSnapshot).mockReset().mockResolvedValue(null);
+    vi.mocked(fetchGscTopPages).mockReset().mockResolvedValue([]);
+    const { fetchGA4Snapshot } = await import("../ga4");
+    vi.mocked(fetchGA4Snapshot).mockReset().mockResolvedValue(null);
+  });
+
+  it("aggregates coverage and opportunities into one snapshot", async () => {
     const sql = createMockSql();
     const snapshot = await buildMarketingSnapshot(sql);
 
-    expect(snapshot.clicks30d).toBe(320);
-    expect(snapshot.impresiones30d).toBe(5100);
-    expect(snapshot.posicionMedia).toBe(18.4);
     expect(snapshot.paginasPublicadas).toBe(40);
     expect(snapshot.paginasTotal).toBe(55);
     expect(snapshot.formulariosIniciados30d).toBe(12);
@@ -64,7 +70,6 @@ describe("buildMarketingSnapshot", () => {
   it("maps a null url to null, not to a string 'null' or undefined", async () => {
     let callCount = 0;
     const responses = [
-      [{ clicks_30d: 0, impresiones_30d: 0, posicion_media: null }],
       [{ publicadas: 0, total: 0 }],
       [{ iniciados: 0, completados: 0 }],
       [{ id: "2", tipo: "CLUSTER_SIN_COBERTURA", score: 50, estado: "PENDIENTE", fuente: "MANUAL", url: null }],
@@ -79,19 +84,19 @@ describe("buildMarketingSnapshot", () => {
     expect(snapshot.oportunidades[0].url).toBeNull();
   });
 
-  it("returns bloqbaseNet: null when GA4 is not connected", async () => {
+  it("returns bloqbaseNetSite.ga4: null when GA4 is not connected", async () => {
     const sql = createMockSql();
     const snapshot = await buildMarketingSnapshot(sql);
-    expect(snapshot.bloqbaseNet).toBeNull();
+    expect(snapshot.bloqbaseNetSite.ga4).toBeNull();
   });
 
-  it("returns bloqbaseNetAnalysis: undefined when GA4 is not connected", async () => {
+  it("returns bloqbaseNetSite.ga4Analysis: undefined when GA4 is not connected", async () => {
     const sql = createMockSql();
     const snapshot = await buildMarketingSnapshot(sql);
-    expect(snapshot.bloqbaseNetAnalysis).toBeUndefined();
+    expect(snapshot.bloqbaseNetSite.ga4Analysis).toBeUndefined();
   });
 
-  it("populates bloqbaseNet when GA4 snapshot is available", async () => {
+  it("populates bloqbaseNetSite.ga4 when GA4 snapshot is available", async () => {
     const { fetchGA4Snapshot } = await import("../ga4");
     vi.mocked(fetchGA4Snapshot).mockResolvedValueOnce({
       disponible: true,
@@ -101,8 +106,14 @@ describe("buildMarketingSnapshot", () => {
     });
     const sql = createMockSql();
     const snapshot = await buildMarketingSnapshot(sql);
-    expect(snapshot.bloqbaseNet).toEqual({ disponible: true, usuarios30d: 500, sesiones30d: 700 });
-    expect(snapshot.bloqbaseNetAnalysis).toBeDefined();
+    expect(snapshot.bloqbaseNetSite.ga4).toEqual({ disponible: true, usuarios30d: 500, sesiones30d: 700 });
+    expect(snapshot.bloqbaseNetSite.ga4Analysis).toBeDefined();
+  });
+
+  it("returns atlasSite.ga4: null always (no GA4 property connected for atlas.bloqbase.net yet)", async () => {
+    const sql = createMockSql();
+    const snapshot = await buildMarketingSnapshot(sql);
+    expect(snapshot.atlasSite.ga4).toBeNull();
   });
 
   it("returns newsletter: null when Beehiiv is not connected", async () => {
@@ -112,12 +123,53 @@ describe("buildMarketingSnapshot", () => {
     expect(snapshot.newsletterAnalysis).toBeUndefined();
   });
 
-  it("includes ga4TopPages and atlasTopPages as arrays in the snapshot", async () => {
+  it("populates bloqbaseNetSite.seo and atlasSite.seo from fetchGscSnapshot/fetchGscTopPages", async () => {
+    const { fetchGscSnapshot, fetchGscTopPages } = await import("../gsc");
+    vi.mocked(fetchGscSnapshot).mockImplementation(async (site) => {
+      if (site === "bloqbase.net") return { disponible: true, clicks30d: 320, impresiones30d: 5100, posicionMedia: 18.4 };
+      if (site === "atlas.bloqbase.net") return { disponible: true, clicks30d: 10, impresiones30d: 900, posicionMedia: 9.1 };
+      return null;
+    });
+    vi.mocked(fetchGscTopPages).mockImplementation(async (site) => {
+      if (site === "bloqbase.net") return [{ url: "https://bloqbase.net/x", clicks: 5, impressions: 50, ctr: 0.1, posicionMedia: 4 }];
+      return [];
+    });
+
     const sql = createMockSql();
     const snapshot = await buildMarketingSnapshot(sql);
-    expect(Array.isArray(snapshot.ga4TopPages)).toBe(true);
-    expect(Array.isArray(snapshot.atlasTopPages)).toBe(true);
-    expect(snapshot.ga4TopPages).toEqual([]);
-    expect(snapshot.atlasTopPages).toEqual([]);
+
+    expect(snapshot.bloqbaseNetSite.seo).toEqual({
+      disponible: true,
+      clicks30d: 320,
+      impresiones30d: 5100,
+      posicionMedia: 18.4,
+      topPages: [{ url: "https://bloqbase.net/x", clicks: 5, impressions: 50, ctr: 0.1, posicionMedia: 4 }],
+    });
+    expect(snapshot.atlasSite.seo).toEqual({
+      disponible: true,
+      clicks30d: 10,
+      impresiones30d: 900,
+      posicionMedia: 9.1,
+      topPages: [],
+    });
+  });
+
+  it("returns disponible: false with zeroed fields for a site when fetchGscSnapshot returns null", async () => {
+    const sql = createMockSql();
+    const snapshot = await buildMarketingSnapshot(sql);
+    expect(snapshot.bloqbaseNetSite.seo).toEqual({
+      disponible: false,
+      clicks30d: 0,
+      impresiones30d: 0,
+      posicionMedia: null,
+      topPages: [],
+    });
+    expect(snapshot.atlasSite.seo).toEqual({
+      disponible: false,
+      clicks30d: 0,
+      impresiones30d: 0,
+      posicionMedia: null,
+      topPages: [],
+    });
   });
 });

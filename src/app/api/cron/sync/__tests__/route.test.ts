@@ -3,9 +3,6 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 vi.mock("@/modules/marketing/lib/queries", () => ({
   buildMarketingSnapshot: vi.fn(async () => ({
     fecha: "2026-09-22",
-    clicks30d: 0,
-    impresiones30d: 0,
-    posicionMedia: null,
     paginasPublicadas: 0,
     paginasTotal: 0,
     formulariosIniciados30d: 0,
@@ -14,6 +11,14 @@ vi.mock("@/modules/marketing/lib/queries", () => ({
     sparkClicks12Sem: [],
     oportunidades: [],
     redes: [],
+    bloqbaseNetSite: {
+      seo: { disponible: false, clicks30d: 0, impresiones30d: 0, posicionMedia: null, topPages: [] },
+      ga4: null,
+    },
+    atlasSite: {
+      seo: { disponible: false, clicks30d: 0, impresiones30d: 0, posicionMedia: null, topPages: [] },
+      ga4: null,
+    },
   })),
 }));
 vi.mock("@/modules/ventas/lib/queries", () => ({

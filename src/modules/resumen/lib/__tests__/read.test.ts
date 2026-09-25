@@ -15,9 +15,6 @@ describe("readLatestSnapshots", () => {
   it("returns both snapshots when both queries succeed", async () => {
     vi.mocked(buildMarketingSnapshot).mockResolvedValue({
       fecha: "2026-09-23",
-      clicks30d: 100,
-      impresiones30d: 500,
-      posicionMedia: 12.3,
       paginasPublicadas: 10,
       paginasTotal: 10,
       formulariosIniciados30d: 0,
@@ -30,10 +27,15 @@ describe("readLatestSnapshots", () => {
       postsProgramados: 0,
       postsPublicados: 0,
       seriesRedes: [],
-      bloqbaseNet: null,
       newsletter: null,
-      ga4TopPages: [],
-      atlasTopPages: [],
+      bloqbaseNetSite: {
+        seo: { disponible: true, clicks30d: 100, impresiones30d: 500, posicionMedia: 12.3, topPages: [] },
+        ga4: null,
+      },
+      atlasSite: {
+        seo: { disponible: false, clicks30d: 0, impresiones30d: 0, posicionMedia: null, topPages: [] },
+        ga4: null,
+      },
     });
     vi.mocked(buildLlamadasSnapshot).mockResolvedValue({
       llamadas7d: 5,
@@ -43,7 +45,7 @@ describe("readLatestSnapshots", () => {
 
     const result = await readLatestSnapshots();
 
-    expect(result.marketing?.clicks30d).toBe(100);
+    expect(result.marketing?.bloqbaseNetSite.seo.clicks30d).toBe(100);
     expect(result.ventas?.llamadas7d).toBe(5);
   });
 
