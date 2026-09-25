@@ -53,6 +53,9 @@ describe("fetchGA4Snapshot", () => {
       })
       .mockResolvedValueOnce({
         data: { rows: [{ dimensionValues: [{ value: "2026-W01" }], metricValues: [{ value: "50" }] }] },
+      })
+      .mockResolvedValueOnce({
+        data: { rows: [{ dimensionValues: [{ value: "20260101" }], metricValues: [{ value: "10" }, { value: "15" }] }] },
       });
     const { fetchGA4Snapshot } = await import("../ga4");
     const result = await fetchGA4Snapshot();
@@ -61,6 +64,7 @@ describe("fetchGA4Snapshot", () => {
       usuarios30d: 100,
       sesiones30d: 150,
       seriesUsuariosSemanal: [{ semana: "2026-W01", usuarios: 50 }],
+      seriesDiaria: [{ fecha: "2026-01-01", usuarios: 10, sesiones: 15 }],
     });
   });
 

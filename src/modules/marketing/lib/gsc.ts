@@ -17,6 +17,12 @@ export type GscPageRow = {
   posicionMedia: number | null;
 };
 
+export type GscDayPoint = {
+  fecha: string; // YYYY-MM-DD
+  clicks: number;
+  impressions: number;
+};
+
 function getGscAuth() {
   const clientId = process.env.GSC_OAUTH_CLIENT_ID;
   const clientSecret = process.env.GSC_OAUTH_CLIENT_SECRET;
@@ -102,6 +108,43 @@ export async function fetchGscTopPages(site: GscSite): Promise<GscPageRow[]> {
     }));
   } catch (err) {
     console.warn(`[gsc] failed to fetch top pages for ${site}`, err);
+    return [];
+  }
+}
+
+/**
+ * Serie diaria de clicks e impresiones (Search Console), últimos 30 días,
+ * para un sitio dado. Mismo patrón de nunca lanzar: retorna [] si faltan
+ * credenciales o si la llamada falla.
+ */
+export async function fetchGscDailySeries(site: GscSite): Promise<GscDayPoint[]> {
+  try {
+    const auth = getGscAuth();
+    if (!auth) return [];
+
+    const webmasters = google.webmasters({ version: "v3", auth });
+    const end = new Date();
+    const start = new Date(end.getTime() - 30 * 864e5);
+
+    const res = await webmasters.searchanalytics.query({
+      siteUrl: `sc-domain:${site}`,
+      requestBody: {
+        startDate: start.toISOString().slice(0, 10),
+        endDate: end.toISOString().slice(0, 10),
+        dimensions: ["date"],
+        rowLimit: 30,
+      },
+    });
+
+    return (res.data.rows ?? [])
+      .map((row) => ({
+        fecha: String(row.keys?.[0] ?? ""),
+        clicks: Number(row.clicks ?? 0),
+        impressions: Number(row.impressions ?? 0),
+      }))
+      .sort((a, b) => a.fecha.localeCompare(b.fecha));
+  } catch (err) {
+    console.warn(`[gsc] failed to fetch daily series for ${site}`, err);
     return [];
   }
 }

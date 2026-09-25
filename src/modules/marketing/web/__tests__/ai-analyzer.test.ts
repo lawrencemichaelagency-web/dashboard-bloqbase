@@ -9,6 +9,7 @@ describe("SEO Analyzer (Growth > Web, per-site)", () => {
     impresiones30d: 80000,
     posicionMedia: 8.5,
     topPages: [],
+    seriesDiaria: [],
   };
 
   const mockOportunidades: MarketingOportunidad[] = [

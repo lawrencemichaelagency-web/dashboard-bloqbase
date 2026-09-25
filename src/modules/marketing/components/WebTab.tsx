@@ -3,6 +3,7 @@ import { MetricCard } from "@/core/components/MetricCard";
 import { SortableTable } from "@/core/components/SortableTable";
 import { EmptyState } from "@/core/components/EmptyState";
 import { MarketingAIRecommendation } from "./MarketingAIRecommendation";
+import { GscDailyChart, Ga4DailyChart, TopPagesBarChart } from "./WebCharts";
 import type { GscPageRow } from "../lib/gsc";
 import type { MarketingSnapshot, WebSiteSnapshot } from "../lib/types";
 
@@ -69,6 +70,14 @@ function SiteView({
 
       {snapshot?.seoAnalysis && <MarketingAIRecommendation data={snapshot.seoAnalysis} />}
 
+      {seo && <div className="mt-[24px]"><GscDailyChart series={seo.seriesDiaria} /></div>}
+
+      {seo && seo.topPages.length > 0 && (
+        <div className="mt-[24px]">
+          <TopPagesBarChart rows={seo.topPages} />
+        </div>
+      )}
+
       <div className="mt-[24px]">
         {seo && seo.topPages.length > 0 ? (
           <SortableTable<GscPageRow>
@@ -116,6 +125,9 @@ function SiteView({
               <MetricCard label="Sesiones GA4 (30d)" value={String(snapshot.ga4.sesiones30d)} />
             </div>
             {snapshot.ga4Analysis && <MarketingAIRecommendation data={snapshot.ga4Analysis} />}
+            <div className="mt-[24px]">
+              <Ga4DailyChart series={snapshot.ga4.seriesDiaria} />
+            </div>
           </>
         ) : (
           <EmptyState title="GA4 no conectado" description="No hay una propiedad de GA4 conectada para este sitio." />

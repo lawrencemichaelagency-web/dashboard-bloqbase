@@ -27,6 +27,7 @@ export type BloqbaseNetSnapshot = {
   disponible: true;
   usuarios30d: number;
   sesiones30d: number;
+  seriesDiaria: { fecha: string; usuarios: number; sesiones: number }[];
 };
 
 export type NewsletterSnapshot = {
@@ -53,6 +54,7 @@ export type SeoSiteSnapshot = {
   impresiones30d: number;
   posicionMedia: number | null;
   topPages: GscPageRow[];
+  seriesDiaria: { fecha: string; clicks: number; impressions: number }[];
 };
 
 export type WebSiteSnapshot = {

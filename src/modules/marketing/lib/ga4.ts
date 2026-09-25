@@ -13,6 +13,7 @@ export type GA4Snapshot = {
   usuarios30d: number;
   sesiones30d: number;
   seriesUsuariosSemanal: { semana: string; usuarios: number }[];
+  seriesDiaria: { fecha: string; usuarios: number; sesiones: number }[];
 };
 
 function getGA4Auth() {
@@ -50,7 +51,7 @@ export async function fetchGA4Snapshot(site: GA4Site = "bloqbase.net"): Promise<
 
     const analyticsdata = google.analyticsdata({ version: "v1beta", auth });
 
-    const [totals, weekly] = await Promise.all([
+    const [totals, weekly, daily] = await Promise.all([
       analyticsdata.properties.runReport({
         property: `properties/${propertyId}`,
         requestBody: {
@@ -66,6 +67,15 @@ export async function fetchGA4Snapshot(site: GA4Site = "bloqbase.net"): Promise<
           metrics: [{ name: "activeUsers" }],
         },
       }),
+      analyticsdata.properties.runReport({
+        property: `properties/${propertyId}`,
+        requestBody: {
+          dateRanges: [{ startDate: "30daysAgo", endDate: "today" }],
+          dimensions: [{ name: "date" }],
+          metrics: [{ name: "activeUsers" }, { name: "sessions" }],
+          orderBys: [{ dimension: { dimensionName: "date" } }],
+        },
+      }),
     ]);
 
     const row = totals.data.rows?.[0];
@@ -77,11 +87,22 @@ export async function fetchGA4Snapshot(site: GA4Site = "bloqbase.net"): Promise<
       usuarios: Number(r.metricValues?.[0]?.value ?? 0),
     }));
 
+    const seriesDiaria = (daily.data.rows ?? []).map((r) => {
+      const raw = String(r.dimensionValues?.[0]?.value ?? "");
+      const fecha = raw.length === 8 ? `${raw.slice(0, 4)}-${raw.slice(4, 6)}-${raw.slice(6, 8)}` : raw;
+      return {
+        fecha,
+        usuarios: Number(r.metricValues?.[0]?.value ?? 0),
+        sesiones: Number(r.metricValues?.[1]?.value ?? 0),
+      };
+    });
+
     return {
       disponible: true,
       usuarios30d,
       sesiones30d,
       seriesUsuariosSemanal,
+      seriesDiaria,
     };
   } catch (err) {
     console.warn("[ga4] failed to fetch GA4 snapshot", err);

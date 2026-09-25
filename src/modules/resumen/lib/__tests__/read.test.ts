@@ -29,11 +29,11 @@ describe("readLatestSnapshots", () => {
       seriesRedes: [],
       newsletter: null,
       bloqbaseNetSite: {
-        seo: { disponible: true, clicks30d: 100, impresiones30d: 500, posicionMedia: 12.3, topPages: [] },
+        seo: { disponible: true, clicks30d: 100, impresiones30d: 500, posicionMedia: 12.3, topPages: [], seriesDiaria: [] },
         ga4: null,
       },
       atlasSite: {
-        seo: { disponible: false, clicks30d: 0, impresiones30d: 0, posicionMedia: null, topPages: [] },
+        seo: { disponible: false, clicks30d: 0, impresiones30d: 0, posicionMedia: null, topPages: [], seriesDiaria: [] },
         ga4: null,
       },
     });

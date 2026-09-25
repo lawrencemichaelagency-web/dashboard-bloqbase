@@ -5,7 +5,7 @@ import { getSqlDataRead } from "@/core/lib/db";
 import { analyzeAtlasSeo, analyzeBloqbaseNet } from "../web/ai-analyzer";
 import { analyzeRedesData } from "../redes/ai-analyzer";
 import { fetchGA4Snapshot } from "./ga4";
-import { fetchGscSnapshot, fetchGscTopPages } from "./gsc";
+import { fetchGscSnapshot, fetchGscTopPages, fetchGscDailySeries } from "./gsc";
 import { fetchBeehiivSnapshot } from "../newsletter/beehiiv";
 import { analyzeNewsletter } from "../newsletter/ai-analyzer";
 
@@ -44,6 +44,8 @@ async function buildMarketingSnapshotUncached(sql?: Sql): Promise<MarketingSnaps
     gscSnapshotAtlas,
     gscTopPagesBloqbaseNet,
     gscTopPagesAtlas,
+    gscSeriesBloqbaseNet,
+    gscSeriesAtlas,
   ] = await Promise.all([
     safe("coverage", () => sqlRead`
       select
@@ -109,6 +111,8 @@ async function buildMarketingSnapshotUncached(sql?: Sql): Promise<MarketingSnaps
     fetchGscSnapshot("atlas.bloqbase.net"),
     fetchGscTopPages("bloqbase.net"),
     fetchGscTopPages("atlas.bloqbase.net"),
+    fetchGscDailySeries("bloqbase.net"),
+    fetchGscDailySeries("atlas.bloqbase.net"),
   ]);
 
   const canales = new Map<string, MarketingRedSocial>();
@@ -146,14 +150,18 @@ async function buildMarketingSnapshotUncached(sql?: Sql): Promise<MarketingSnaps
   }));
 
   const bloqbaseNetSeo: SeoSiteSnapshot = gscSnapshotBloqbaseNet
-    ? { ...gscSnapshotBloqbaseNet, topPages: gscTopPagesBloqbaseNet }
-    : { disponible: false, clicks30d: 0, impresiones30d: 0, posicionMedia: null, topPages: [] };
+    ? { ...gscSnapshotBloqbaseNet, topPages: gscTopPagesBloqbaseNet, seriesDiaria: gscSeriesBloqbaseNet }
+    : { disponible: false, clicks30d: 0, impresiones30d: 0, posicionMedia: null, topPages: [], seriesDiaria: [] };
   const atlasSeo: SeoSiteSnapshot = gscSnapshotAtlas
-    ? { ...gscSnapshotAtlas, topPages: gscTopPagesAtlas }
-    : { disponible: false, clicks30d: 0, impresiones30d: 0, posicionMedia: null, topPages: [] };
+    ? { ...gscSnapshotAtlas, topPages: gscTopPagesAtlas, seriesDiaria: gscSeriesAtlas }
+    : { disponible: false, clicks30d: 0, impresiones30d: 0, posicionMedia: null, topPages: [], seriesDiaria: [] };
 
-  const bloqbaseNetGa4 = ga4 ? { disponible: true as const, usuarios30d: ga4.usuarios30d, sesiones30d: ga4.sesiones30d } : null;
-  const atlasGa4 = ga4Atlas ? { disponible: true as const, usuarios30d: ga4Atlas.usuarios30d, sesiones30d: ga4Atlas.sesiones30d } : null;
+  const bloqbaseNetGa4 = ga4
+    ? { disponible: true as const, usuarios30d: ga4.usuarios30d, sesiones30d: ga4.sesiones30d, seriesDiaria: ga4.seriesDiaria }
+    : null;
+  const atlasGa4 = ga4Atlas
+    ? { disponible: true as const, usuarios30d: ga4Atlas.usuarios30d, sesiones30d: ga4Atlas.sesiones30d, seriesDiaria: ga4Atlas.seriesDiaria }
+    : null;
 
   const bloqbaseNetSite: WebSiteSnapshot = { seo: bloqbaseNetSeo, ga4: bloqbaseNetGa4 };
   const atlasSite: WebSiteSnapshot = { seo: atlasSeo, ga4: atlasGa4 };

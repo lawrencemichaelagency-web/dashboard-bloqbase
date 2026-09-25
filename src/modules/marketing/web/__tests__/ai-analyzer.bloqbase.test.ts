@@ -8,6 +8,7 @@ describe("bloqbase.net Analyzer (Growth > Web)", () => {
     usuarios30d: 500,
     sesiones30d: 700,
     seriesUsuariosSemanal: [],
+    seriesDiaria: [],
   };
 
   it("diagnoses low form conversion when there is enough form volume", () => {

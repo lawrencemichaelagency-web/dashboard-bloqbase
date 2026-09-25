@@ -9,6 +9,7 @@ vi.mock("../ga4", () => ({
 vi.mock("../gsc", () => ({
   fetchGscSnapshot: vi.fn(async () => null),
   fetchGscTopPages: vi.fn(async () => []),
+  fetchGscDailySeries: vi.fn(async () => []),
 }));
 
 vi.mock("../newsletter/beehiiv", () => ({
@@ -39,9 +40,10 @@ function createMockSql() {
 
 describe("buildMarketingSnapshot", () => {
   beforeEach(async () => {
-    const { fetchGscSnapshot, fetchGscTopPages } = await import("../gsc");
+    const { fetchGscSnapshot, fetchGscTopPages, fetchGscDailySeries } = await import("../gsc");
     vi.mocked(fetchGscSnapshot).mockReset().mockResolvedValue(null);
     vi.mocked(fetchGscTopPages).mockReset().mockResolvedValue([]);
+    vi.mocked(fetchGscDailySeries).mockReset().mockResolvedValue([]);
     const { fetchGA4Snapshot } = await import("../ga4");
     vi.mocked(fetchGA4Snapshot).mockReset().mockResolvedValue(null);
   });
@@ -103,10 +105,11 @@ describe("buildMarketingSnapshot", () => {
       usuarios30d: 500,
       sesiones30d: 700,
       seriesUsuariosSemanal: [],
+      seriesDiaria: [],
     });
     const sql = createMockSql();
     const snapshot = await buildMarketingSnapshot(sql);
-    expect(snapshot.bloqbaseNetSite.ga4).toEqual({ disponible: true, usuarios30d: 500, sesiones30d: 700 });
+    expect(snapshot.bloqbaseNetSite.ga4).toEqual({ disponible: true, usuarios30d: 500, sesiones30d: 700, seriesDiaria: [] });
     expect(snapshot.bloqbaseNetSite.ga4Analysis).toBeDefined();
   });
 
@@ -144,6 +147,7 @@ describe("buildMarketingSnapshot", () => {
       impresiones30d: 5100,
       posicionMedia: 18.4,
       topPages: [{ url: "https://bloqbase.net/x", clicks: 5, impressions: 50, ctr: 0.1, posicionMedia: 4 }],
+      seriesDiaria: [],
     });
     expect(snapshot.atlasSite.seo).toEqual({
       disponible: true,
@@ -151,6 +155,7 @@ describe("buildMarketingSnapshot", () => {
       impresiones30d: 900,
       posicionMedia: 9.1,
       topPages: [],
+      seriesDiaria: [],
     });
   });
 
@@ -163,6 +168,7 @@ describe("buildMarketingSnapshot", () => {
       impresiones30d: 0,
       posicionMedia: null,
       topPages: [],
+      seriesDiaria: [],
     });
     expect(snapshot.atlasSite.seo).toEqual({
       disponible: false,
@@ -170,6 +176,7 @@ describe("buildMarketingSnapshot", () => {
       impresiones30d: 0,
       posicionMedia: null,
       topPages: [],
+      seriesDiaria: [],
     });
   });
 });
