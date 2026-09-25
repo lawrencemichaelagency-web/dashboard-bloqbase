@@ -1,24 +1,12 @@
 import { MetricCard } from "@/core/components/MetricCard";
-import { Badge, type BadgeStatus } from "@/core/components/Badge";
-import { Table } from "@/core/components/Table";
 import { SortableTable } from "@/core/components/SortableTable";
 import { EmptyState } from "@/core/components/EmptyState";
 import { MarketingAIRecommendation } from "./MarketingAIRecommendation";
-import type { AtlasPageRow, GA4PageRow, MarketingOportunidad, MarketingSnapshot } from "../lib/types";
+import type { AtlasPageRow, GA4PageRow, MarketingSnapshot } from "../lib/types";
 
-function toBadgeStatus(estado: string): BadgeStatus {
-  const map: Record<string, BadgeStatus> = {
-    PENDIENTE: "pendiente",
-    APROBADA: "hecho",
-    RECHAZADA: "archivado",
-    EXPIRADA: "bloqueado",
-  };
-  return map[estado] ?? "pendiente";
-}
+const TOP_PAGES_LIMIT = 10;
 
 export function WebTab({ snapshot }: { snapshot: MarketingSnapshot | null }) {
-  const oportunidades: MarketingOportunidad[] = snapshot?.oportunidades ?? [];
-
   return (
     <div>
       <div className="mt-[8px] max-w-[480px] text-[13px] leading-[1.55] text-[rgba(26,26,24,0.55)]">
@@ -41,29 +29,10 @@ export function WebTab({ snapshot }: { snapshot: MarketingSnapshot | null }) {
       {snapshot?.aiAnalysis && <MarketingAIRecommendation data={snapshot.aiAnalysis} />}
 
       <div className="mt-[24px]">
-        {oportunidades.length > 0 ? (
-          <Table<MarketingOportunidad>
-            title="Oportunidades SEO pendientes"
-            count={String(oportunidades.length).padStart(2, "0")}
-            rowKey={(row) => row.id}
-            columns={[
-              { header: "Página", render: (row) => row.url ?? "—" },
-              { header: "Tipo", render: (row) => row.tipo },
-              { header: "Score", align: "right", render: (row) => (row.score != null ? row.score.toFixed(1) : "—") },
-              { header: "Estado", render: (row) => <Badge status={toBadgeStatus(row.estado)}>{row.estado}</Badge> },
-            ]}
-            rows={oportunidades}
-          />
-        ) : (
-          <EmptyState title="Sin oportunidades pendientes" description="No hay oportunidades SEO pendientes de revisión." />
-        )}
-      </div>
-
-      <div className="mt-[24px]">
         {snapshot && snapshot.atlasTopPages.length > 0 ? (
           <SortableTable<AtlasPageRow>
-            title="Top 20 páginas por clicks orgánicos"
-            count={String(snapshot.atlasTopPages.length).padStart(2, "0")}
+            title="Top 10 páginas por clicks orgánicos"
+            count={String(Math.min(snapshot.atlasTopPages.length, TOP_PAGES_LIMIT)).padStart(2, "0")}
             rowKeyField="url"
             defaultSortIndex={1}
             columns={[
@@ -73,7 +42,7 @@ export function WebTab({ snapshot }: { snapshot: MarketingSnapshot | null }) {
               { key: "ctr", header: "CTR", align: "right", format: "percent" },
               { key: "posicionMedia", header: "Posición media", align: "right", format: "number" },
             ]}
-            rows={snapshot.atlasTopPages}
+            rows={snapshot.atlasTopPages.slice(0, TOP_PAGES_LIMIT)}
           />
         ) : (
           <EmptyState title="Sin datos de páginas" description="No hay datos de rendimiento por página en los últimos 30 días." />
@@ -115,8 +84,8 @@ export function WebTab({ snapshot }: { snapshot: MarketingSnapshot | null }) {
             <div className="mt-[24px]">
               {snapshot.ga4TopPages.length > 0 ? (
                 <SortableTable<GA4PageRow>
-                  title="Top 20 páginas por visitas (GA4)"
-                  count={String(snapshot.ga4TopPages.length).padStart(2, "0")}
+                  title="Top 10 páginas por visitas (GA4)"
+                  count={String(Math.min(snapshot.ga4TopPages.length, TOP_PAGES_LIMIT)).padStart(2, "0")}
                   rowKeyField="pagePath"
                   defaultSortIndex={1}
                   columns={[
@@ -126,7 +95,7 @@ export function WebTab({ snapshot }: { snapshot: MarketingSnapshot | null }) {
                     { key: "duracionMediaSegundos", header: "Duración media", align: "right", format: "seconds" },
                     { key: "engagementRate", header: "Engagement", align: "right", format: "percent" },
                   ]}
-                  rows={snapshot.ga4TopPages}
+                  rows={snapshot.ga4TopPages.slice(0, TOP_PAGES_LIMIT)}
                 />
               ) : (
                 <EmptyState title="Sin datos de páginas GA4" description="No hay datos de páginas individuales en los últimos 30 días." />
