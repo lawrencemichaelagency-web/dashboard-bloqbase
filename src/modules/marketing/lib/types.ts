@@ -12,7 +12,6 @@ export type MarketingRedSocial = {
   posts: number;
   alcance: number;
   impresiones: number;
-  clicks: number;
   interacciones: number;
 };
 

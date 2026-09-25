@@ -1,9 +1,10 @@
 import type postgres from "postgres";
 import { unstable_cache } from "next/cache";
-import type { MarketingSnapshot, MarketingOportunidad, MarketingRedSocial, SerieRedSocialPunto, WebSiteSnapshot, SeoSiteSnapshot } from "./types";
+import type { MarketingSnapshot, MarketingOportunidad, WebSiteSnapshot, SeoSiteSnapshot } from "./types";
 import { getSqlDataRead } from "@/core/lib/db";
 import { analyzeAtlasSeo, analyzeBloqbaseNet } from "../web/ai-analyzer";
 import { analyzeRedesData } from "../redes/ai-analyzer";
+import { fetchBufferSnapshot } from "../redes/buffer";
 import { fetchGA4Snapshot, fetchGA4TopPages } from "./ga4";
 import { fetchGscSnapshot, fetchGscTopPages, fetchGscDailySeries } from "./gsc";
 import { fetchBeehiivSnapshot } from "../newsletter/beehiiv";
@@ -33,10 +34,7 @@ async function buildMarketingSnapshotUncached(sql?: Sql): Promise<MarketingSnaps
     forms,
     opportunities,
     spark,
-    social,
-    socialPosts,
-    postsPorEstado,
-    seriesRaw,
+    buffer,
     ga4,
     ga4Atlas,
     beehiiv,
@@ -77,35 +75,7 @@ async function buildMarketingSnapshotUncached(sql?: Sql): Promise<MarketingSnaps
       group by 1
       order by 1
     `),
-    safe("social", () => sqlRead`
-      select
-        canal,
-        metric_name,
-        coalesce(sum(value), 0) as total
-      from social.metricas
-      group by canal, metric_name
-    `),
-    safe("socialPosts", () => sqlRead`
-      select canal, count(*)::int as posts
-      from social.posts
-      group by canal
-    `),
-    safe("postsPorEstado", () => sqlRead`
-      select estado, count(*)::int as total
-      from social.posts
-      group by estado
-    `),
-    safe("seriesRedes", () => sqlRead`
-      select
-        coalesce(fecha_publicacion, fecha) as fecha,
-        canal,
-        metric_name,
-        coalesce(sum(value), 0) as total
-      from social.metricas
-      where coalesce(fecha_publicacion, fecha) >= current_date - interval '90 days'
-      group by coalesce(fecha_publicacion, fecha), canal, metric_name
-      order by 1
-    `),
+    fetchBufferSnapshot(),
     fetchGA4Snapshot(),
     fetchGA4Snapshot("atlas.bloqbase.net"),
     fetchBeehiivSnapshot(),
@@ -119,39 +89,6 @@ async function buildMarketingSnapshotUncached(sql?: Sql): Promise<MarketingSnaps
     fetchGA4TopPages("atlas.bloqbase.net"),
   ]);
 
-  const canales = new Map<string, MarketingRedSocial>();
-  for (const row of socialPosts) {
-    canales.set(String(row.canal), {
-      canal: String(row.canal),
-      posts: Number(row.posts),
-      alcance: 0,
-      impresiones: 0,
-      clicks: 0,
-      interacciones: 0,
-    });
-  }
-  for (const row of social) {
-    const canal = String(row.canal);
-    if (!canales.has(canal)) {
-      canales.set(canal, { canal, posts: 0, alcance: 0, impresiones: 0, clicks: 0, interacciones: 0 });
-    }
-    const entry = canales.get(canal)!;
-    const metric = String(row.metric_name);
-    const value = Number(row.total);
-    if (metric === "Reach") entry.alcance += value;
-    else if (metric === "Impressions") entry.impresiones += value;
-    else if (metric === "Clicks") entry.clicks += value;
-    else if (["Reactions", "Comments", "Shares", "Reposts", "Saves"].includes(metric)) entry.interacciones += value;
-  }
-
-  const estadoMap = new Map(postsPorEstado.map((r) => [String(r.estado), Number(r.total)]));
-
-  const seriesRedes: SerieRedSocialPunto[] = seriesRaw.map((row) => ({
-    fecha: new Date(row.fecha).toISOString().slice(0, 10),
-    canal: String(row.canal),
-    metricName: String(row.metric_name),
-    value: Number(row.total),
-  }));
 
   const bloqbaseNetSeo: SeoSiteSnapshot = gscSnapshotBloqbaseNet
     ? { ...gscSnapshotBloqbaseNet, topPages: gscTopPagesBloqbaseNet, seriesDiaria: gscSeriesBloqbaseNet }
@@ -200,11 +137,11 @@ async function buildMarketingSnapshotUncached(sql?: Sql): Promise<MarketingSnaps
         url: row.url != null ? String(row.url) : null,
       })
     ),
-    redes: Array.from(canales.values()),
-    postsBorrador: estadoMap.get("BORRADOR") ?? 0,
-    postsProgramados: estadoMap.get("PROGRAMADO") ?? 0,
-    postsPublicados: estadoMap.get("PUBLICADO") ?? 0,
-    seriesRedes,
+    redes: buffer.redes,
+    postsBorrador: buffer.postsBorrador,
+    postsProgramados: buffer.postsProgramados,
+    postsPublicados: buffer.postsPublicados,
+    seriesRedes: buffer.seriesRedes,
     newsletter: beehiiv
       ? {
           disponible: true,

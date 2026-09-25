@@ -41,7 +41,6 @@ export function RedesTab({ snapshot }: { snapshot: MarketingSnapshot | null }) {
               { header: "Posts", align: "right", render: (row) => String(row.posts) },
               { header: "Alcance", align: "right", render: (row) => String(row.alcance) },
               { header: "Impresiones", align: "right", render: (row) => String(row.impresiones) },
-              { header: "Clicks", align: "right", render: (row) => String(row.clicks) },
               { header: "Interacciones", align: "right", render: (row) => String(row.interacciones) },
             ]}
             rows={redes}
