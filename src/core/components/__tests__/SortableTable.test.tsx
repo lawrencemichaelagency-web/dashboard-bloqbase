@@ -19,7 +19,7 @@ const columns: SortableColumn<Row>[] = [
 describe("SortableTable", () => {
   it("sorts descending by the default column on mount", () => {
     const { container } = render(
-      <SortableTable<Row> title="Test" columns={columns} rows={rows} rowKey={(row) => row.id} defaultSortIndex={1} defaultSortDesc />
+      <SortableTable<Row> title="Test" columns={columns} rows={rows} rowKeyField="id" defaultSortIndex={1} defaultSortDesc />
     );
     const bodyRows = container.querySelectorAll(".bq-tbody-row");
     const firstRowText = within(bodyRows[0] as HTMLElement).getAllByRole("cell")[1].textContent;
@@ -30,7 +30,7 @@ describe("SortableTable", () => {
 
   it("reorders by column when its header is clicked", () => {
     const { container } = render(
-      <SortableTable<Row> title="Test" columns={columns} rows={rows} rowKey={(row) => row.id} defaultSortIndex={1} defaultSortDesc />
+      <SortableTable<Row> title="Test" columns={columns} rows={rows} rowKeyField="id" defaultSortIndex={1} defaultSortDesc />
     );
     const headers = container.querySelectorAll(".bq-th");
     fireEvent.click(headers[0]); // sort by Nombre, defaults to desc on new column
@@ -41,7 +41,7 @@ describe("SortableTable", () => {
 
   it("reverses order on a second click of the same header", () => {
     const { container } = render(
-      <SortableTable<Row> title="Test" columns={columns} rows={rows} rowKey={(row) => row.id} defaultSortIndex={1} defaultSortDesc />
+      <SortableTable<Row> title="Test" columns={columns} rows={rows} rowKeyField="id" defaultSortIndex={1} defaultSortDesc />
     );
     const headers = container.querySelectorAll(".bq-th");
     // first click on Valor (already sorted desc by default) -> flips to asc
@@ -53,7 +53,7 @@ describe("SortableTable", () => {
 
   it("shows 'Sin filas que mostrar.' when rows is empty", () => {
     const { container } = render(
-      <SortableTable<Row> title="Test" columns={columns} rows={[]} rowKey={(row) => row.id} />
+      <SortableTable<Row> title="Test" columns={columns} rows={[]} rowKeyField="id" />
     );
     expect(within(container).getByText("Sin filas que mostrar.")).toBeInTheDocument();
   });
@@ -66,7 +66,7 @@ describe("SortableTable", () => {
       { key: "value", header: "Valor", align: "right", format: "number" },
     ];
     const { container } = render(
-      <SortableTable<RowWithNull> title="Test" columns={nullColumns} rows={rowsWithNull} rowKey={(row) => row.id} />
+      <SortableTable<RowWithNull> title="Test" columns={nullColumns} rows={rowsWithNull} rowKeyField="id" />
     );
     const bodyRows = container.querySelectorAll(".bq-tbody-row");
     const cellText = within(bodyRows[0] as HTMLElement).getAllByRole("cell")[1].textContent;
@@ -81,7 +81,7 @@ describe("SortableTable", () => {
       { key: "duration", header: "Duration", format: "seconds" },
     ];
     const { container } = render(
-      <SortableTable<MetricRow> title="Test" columns={metricColumns} rows={metricRows} rowKey={(row) => row.id} />
+      <SortableTable<MetricRow> title="Test" columns={metricColumns} rows={metricRows} rowKeyField="id" />
     );
     const bodyRows = container.querySelectorAll(".bq-tbody-row");
     const cells = within(bodyRows[0] as HTMLElement).getAllByRole("cell");

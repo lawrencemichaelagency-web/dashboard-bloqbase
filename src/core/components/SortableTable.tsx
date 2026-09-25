@@ -43,7 +43,7 @@ export function SortableTable<T>({
   count,
   columns,
   rows,
-  rowKey,
+  rowKeyField,
   defaultSortIndex = 0,
   defaultSortDesc = true,
 }: {
@@ -51,7 +51,7 @@ export function SortableTable<T>({
   count?: string;
   columns: SortableColumn<T>[];
   rows: T[];
-  rowKey: (row: T) => string;
+  rowKeyField: keyof T;
   defaultSortIndex?: number;
   defaultSortDesc?: boolean;
 }) {
@@ -101,7 +101,7 @@ export function SortableTable<T>({
           </thead>
           <tbody>
             {sortedRows.map((row) => (
-              <tr key={rowKey(row)} className="bq-tbody-row">
+              <tr key={String(row[rowKeyField])} className="bq-tbody-row">
                 {columns.map((col) => (
                   <td
                     key={col.header}

@@ -64,7 +64,7 @@ export function WebTab({ snapshot }: { snapshot: MarketingSnapshot | null }) {
           <SortableTable<AtlasPageRow>
             title="Top 20 páginas por clicks orgánicos"
             count={String(snapshot.atlasTopPages.length).padStart(2, "0")}
-            rowKey={(row) => row.url}
+            rowKeyField="url"
             defaultSortIndex={1}
             columns={[
               { key: "url", header: "URL", format: "text" },
@@ -117,7 +117,7 @@ export function WebTab({ snapshot }: { snapshot: MarketingSnapshot | null }) {
                 <SortableTable<GA4PageRow>
                   title="Top 20 páginas por visitas (GA4)"
                   count={String(snapshot.ga4TopPages.length).padStart(2, "0")}
-                  rowKey={(row) => row.pagePath}
+                  rowKeyField="pagePath"
                   defaultSortIndex={1}
                   columns={[
                     { key: "pagePath", header: "Página", format: "text" },
