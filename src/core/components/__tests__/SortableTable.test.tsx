@@ -12,8 +12,8 @@ const rows: Row[] = [
 ];
 
 const columns: SortableColumn<Row>[] = [
-  { header: "Nombre", render: (row) => row.name, sortValue: (row) => row.name },
-  { header: "Valor", align: "right", render: (row) => String(row.value), sortValue: (row) => row.value },
+  { key: "name", header: "Nombre", format: "text" },
+  { key: "value", header: "Valor", align: "right", format: "number" },
 ];
 
 describe("SortableTable", () => {
@@ -56,5 +56,36 @@ describe("SortableTable", () => {
       <SortableTable<Row> title="Test" columns={columns} rows={[]} rowKey={(row) => row.id} />
     );
     expect(within(container).getByText("Sin filas que mostrar.")).toBeInTheDocument();
+  });
+
+  it("shows the fallback ('—' by default) for a null column value", () => {
+    type RowWithNull = { id: string; name: string; value: number | null };
+    const rowsWithNull: RowWithNull[] = [{ id: "a", name: "Alpha", value: null }];
+    const nullColumns: SortableColumn<RowWithNull>[] = [
+      { key: "name", header: "Nombre", format: "text" },
+      { key: "value", header: "Valor", align: "right", format: "number" },
+    ];
+    const { container } = render(
+      <SortableTable<RowWithNull> title="Test" columns={nullColumns} rows={rowsWithNull} rowKey={(row) => row.id} />
+    );
+    const bodyRows = container.querySelectorAll(".bq-tbody-row");
+    const cellText = within(bodyRows[0] as HTMLElement).getAllByRole("cell")[1].textContent;
+    expect(cellText).toBe("—");
+  });
+
+  it("formats percent and seconds columns correctly", () => {
+    type MetricRow = { id: string; rate: number; duration: number };
+    const metricRows: MetricRow[] = [{ id: "a", rate: 0.256, duration: 123.7 }];
+    const metricColumns: SortableColumn<MetricRow>[] = [
+      { key: "rate", header: "Rate", format: "percent" },
+      { key: "duration", header: "Duration", format: "seconds" },
+    ];
+    const { container } = render(
+      <SortableTable<MetricRow> title="Test" columns={metricColumns} rows={metricRows} rowKey={(row) => row.id} />
+    );
+    const bodyRows = container.querySelectorAll(".bq-tbody-row");
+    const cells = within(bodyRows[0] as HTMLElement).getAllByRole("cell");
+    expect(cells[0].textContent).toBe("25.60%");
+    expect(cells[1].textContent).toBe("124s");
   });
 });

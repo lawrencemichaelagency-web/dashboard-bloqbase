@@ -67,16 +67,11 @@ export function WebTab({ snapshot }: { snapshot: MarketingSnapshot | null }) {
             rowKey={(row) => row.url}
             defaultSortIndex={1}
             columns={[
-              { header: "URL", render: (row) => row.url, sortValue: (row) => row.url },
-              { header: "Clicks", align: "right", render: (row) => String(row.clicks), sortValue: (row) => row.clicks },
-              { header: "Impresiones", align: "right", render: (row) => String(row.impressions), sortValue: (row) => row.impressions },
-              { header: "CTR", align: "right", render: (row) => `${(row.ctr * 100).toFixed(2)}%`, sortValue: (row) => row.ctr },
-              {
-                header: "Posición media",
-                align: "right",
-                render: (row) => (row.posicionMedia != null ? row.posicionMedia.toFixed(1) : "—"),
-                sortValue: (row) => row.posicionMedia ?? 999,
-              },
+              { key: "url", header: "URL", format: "text" },
+              { key: "clicks", header: "Clicks", align: "right", format: "number" },
+              { key: "impressions", header: "Impresiones", align: "right", format: "number" },
+              { key: "ctr", header: "CTR", align: "right", format: "percent" },
+              { key: "posicionMedia", header: "Posición media", align: "right", format: "number" },
             ]}
             rows={snapshot.atlasTopPages}
           />
@@ -125,21 +120,11 @@ export function WebTab({ snapshot }: { snapshot: MarketingSnapshot | null }) {
                   rowKey={(row) => row.pagePath}
                   defaultSortIndex={1}
                   columns={[
-                    { header: "Página", render: (row) => row.pagePath, sortValue: (row) => row.pagePath },
-                    { header: "Vistas", align: "right", render: (row) => String(row.vistas), sortValue: (row) => row.vistas },
-                    { header: "Sesiones", align: "right", render: (row) => String(row.sesiones), sortValue: (row) => row.sesiones },
-                    {
-                      header: "Duración media",
-                      align: "right",
-                      render: (row) => `${Math.round(row.duracionMediaSegundos)}s`,
-                      sortValue: (row) => row.duracionMediaSegundos,
-                    },
-                    {
-                      header: "Engagement",
-                      align: "right",
-                      render: (row) => `${(row.engagementRate * 100).toFixed(0)}%`,
-                      sortValue: (row) => row.engagementRate,
-                    },
+                    { key: "pagePath", header: "Página", format: "text" },
+                    { key: "vistas", header: "Vistas", align: "right", format: "number" },
+                    { key: "sesiones", header: "Sesiones", align: "right", format: "number" },
+                    { key: "duracionMediaSegundos", header: "Duración media", align: "right", format: "seconds" },
+                    { key: "engagementRate", header: "Engagement", align: "right", format: "percent" },
                   ]}
                   rows={snapshot.ga4TopPages}
                 />

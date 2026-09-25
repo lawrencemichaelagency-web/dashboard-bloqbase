@@ -2,12 +2,41 @@
 
 import { useState } from "react";
 
+// "format" es un enum serializable (no una función) a propósito: este
+// componente es un Client Component, y las columnas se declaran desde
+// Server Components (ver WebTab.tsx) -- pasar funciones (render/sortValue)
+// de servidor a cliente rompe en producción con "Functions cannot be passed
+// directly to Client Components", un error que solo aparece en runtime, no
+// en build ni en tests unitarios que renderizan el componente aislado.
+export type SortableColumnFormat = "text" | "number" | "percent" | "seconds";
+
 export type SortableColumn<T> = {
+  key: keyof T;
   header: string;
   align?: "left" | "right";
-  render: (row: T) => React.ReactNode;
-  sortValue: (row: T) => number | string; // valor usado para ordenar, no necesariamente lo que se muestra
+  format?: SortableColumnFormat; // por defecto "text"
+  fallback?: string; // qué mostrar cuando el valor es null/undefined, por defecto "—"
 };
+
+function formatValue(value: unknown, format: SortableColumnFormat, fallback: string): string {
+  if (value == null) return fallback;
+  switch (format) {
+    case "number":
+      return String(value);
+    case "percent":
+      return `${(Number(value) * 100).toFixed(2)}%`;
+    case "seconds":
+      return `${Math.round(Number(value))}s`;
+    case "text":
+    default:
+      return String(value);
+  }
+}
+
+function sortKey(value: unknown): number | string {
+  if (value == null) return typeof value === "number" ? -Infinity : "";
+  return typeof value === "number" ? value : String(value);
+}
 
 export function SortableTable<T>({
   title,
@@ -30,8 +59,9 @@ export function SortableTable<T>({
   const [sortDesc, setSortDesc] = useState(defaultSortDesc);
 
   const sortedRows = [...rows].sort((a, b) => {
-    const va = columns[sortIndex].sortValue(a);
-    const vb = columns[sortIndex].sortValue(b);
+    const col = columns[sortIndex];
+    const va = sortKey(a[col.key]);
+    const vb = sortKey(b[col.key]);
     const cmp = typeof va === "number" && typeof vb === "number" ? va - vb : String(va).localeCompare(String(vb));
     return sortDesc ? -cmp : cmp;
   });
@@ -77,7 +107,7 @@ export function SortableTable<T>({
                     key={col.header}
                     className={"bq-td w-[180px] break-words " + (col.align === "right" ? "text-right" : "text-left")}
                   >
-                    {col.render(row)}
+                    {formatValue(row[col.key], col.format ?? "text", col.fallback ?? "—")}
                   </td>
                 ))}
               </tr>
