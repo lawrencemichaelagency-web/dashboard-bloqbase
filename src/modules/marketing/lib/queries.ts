@@ -1,4 +1,5 @@
 import type postgres from "postgres";
+import { unstable_cache } from "next/cache";
 import type { MarketingSnapshot, MarketingOportunidad, MarketingRedSocial, SerieRedSocialPunto } from "./types";
 import { getSqlDataRead } from "@/core/lib/db";
 import { analyzeAtlasSeo, analyzeBloqbaseNet } from "../web/ai-analyzer";
@@ -19,83 +20,99 @@ async function safe<T>(label: string, fn: () => Promise<T[]>): Promise<T[]> {
   }
 }
 
-export async function buildMarketingSnapshot(sql?: Sql): Promise<MarketingSnapshot> {
+async function buildMarketingSnapshotUncached(sql?: Sql): Promise<MarketingSnapshot> {
   // Use data read connection (live data from EXCELSIUS-CONSTRUYE project)
   const sqlRead = sql || getSqlDataRead();
 
-  const traffic = await safe("traffic", () => sqlRead`
-    select
-      coalesce(sum(clicks), 0)::int as clicks_30d,
-      coalesce(sum(impressions), 0)::int as impresiones_30d,
-      round(avg(position), 2) as posicion_media
-    from seo.page_performance_daily
-    where fecha >= current_date - interval '30 days'
-  `);
-
-  const coverage = await safe("coverage", () => sqlRead`
-    select
-      count(*) filter (where estado = 'LIVE') as publicadas,
-      count(*) as total
-    from seo.pages
-  `);
-
-  const forms = await safe("forms", () => sqlRead`
-    select
-      coalesce(sum(form_starts), 0)::int as iniciados,
-      coalesce(sum(form_submits), 0)::int as completados
-    from seo.form_conversions_daily
-    where fecha >= current_date - interval '30 days'
-  `);
-
-  const opportunities = await safe("opportunities", () => sqlRead`
-    select id, tipo, score, estado, fuente, url
-    from seo.opportunities
-    where estado = 'PENDIENTE'
-    order by score desc nulls last
-    limit 25
-  `);
-
-  const spark = await safe("spark", () => sqlRead`
-    select
-      date_trunc('week', fecha) as semana,
-      sum(clicks)::int as clicks
-    from seo.page_performance_daily
-    group by 1
-    order by 1
-  `);
-
-  const social = await safe("social", () => sqlRead`
-    select
-      canal,
-      metric_name,
-      coalesce(sum(value), 0) as total
-    from social.metricas
-    group by canal, metric_name
-  `);
-
-  const socialPosts = await safe("socialPosts", () => sqlRead`
-    select canal, count(*)::int as posts
-    from social.posts
-    group by canal
-  `);
-
-  const postsPorEstado = await safe("postsPorEstado", () => sqlRead`
-    select estado, count(*)::int as total
-    from social.posts
-    group by estado
-  `);
-
-  const seriesRaw = await safe("seriesRedes", () => sqlRead`
-    select
-      coalesce(fecha_publicacion, fecha) as fecha,
-      canal,
-      metric_name,
-      coalesce(sum(value), 0) as total
-    from social.metricas
-    where coalesce(fecha_publicacion, fecha) >= current_date - interval '90 days'
-    group by coalesce(fecha_publicacion, fecha), canal, metric_name
-    order by 1
-  `);
+  // Todas las queries de Postgres y las llamadas externas (GA4, Beehiiv) son
+  // independientes entre sí -- corren en paralelo (antes iban en secuencia,
+  // sumando ~3.8s por carga; en paralelo el tiempo total es el de la más
+  // lenta, no la suma de todas).
+  const [
+    traffic,
+    coverage,
+    forms,
+    opportunities,
+    spark,
+    social,
+    socialPosts,
+    postsPorEstado,
+    seriesRaw,
+    ga4,
+    beehiiv,
+    ga4TopPages,
+    atlasTopPages,
+  ] = await Promise.all([
+    safe("traffic", () => sqlRead`
+      select
+        coalesce(sum(clicks), 0)::int as clicks_30d,
+        coalesce(sum(impressions), 0)::int as impresiones_30d,
+        round(avg(position), 2) as posicion_media
+      from seo.page_performance_daily
+      where fecha >= current_date - interval '30 days'
+    `),
+    safe("coverage", () => sqlRead`
+      select
+        count(*) filter (where estado = 'LIVE') as publicadas,
+        count(*) as total
+      from seo.pages
+    `),
+    safe("forms", () => sqlRead`
+      select
+        coalesce(sum(form_starts), 0)::int as iniciados,
+        coalesce(sum(form_submits), 0)::int as completados
+      from seo.form_conversions_daily
+      where fecha >= current_date - interval '30 days'
+    `),
+    safe("opportunities", () => sqlRead`
+      select id, tipo, score, estado, fuente, url
+      from seo.opportunities
+      where estado = 'PENDIENTE'
+      order by score desc nulls last
+      limit 25
+    `),
+    safe("spark", () => sqlRead`
+      select
+        date_trunc('week', fecha) as semana,
+        sum(clicks)::int as clicks
+      from seo.page_performance_daily
+      group by 1
+      order by 1
+    `),
+    safe("social", () => sqlRead`
+      select
+        canal,
+        metric_name,
+        coalesce(sum(value), 0) as total
+      from social.metricas
+      group by canal, metric_name
+    `),
+    safe("socialPosts", () => sqlRead`
+      select canal, count(*)::int as posts
+      from social.posts
+      group by canal
+    `),
+    safe("postsPorEstado", () => sqlRead`
+      select estado, count(*)::int as total
+      from social.posts
+      group by estado
+    `),
+    safe("seriesRedes", () => sqlRead`
+      select
+        coalesce(fecha_publicacion, fecha) as fecha,
+        canal,
+        metric_name,
+        coalesce(sum(value), 0) as total
+      from social.metricas
+      where coalesce(fecha_publicacion, fecha) >= current_date - interval '90 days'
+      group by coalesce(fecha_publicacion, fecha), canal, metric_name
+      order by 1
+    `),
+    fetchGA4Snapshot(),
+    fetchBeehiivSnapshot(),
+    fetchGA4TopPages(),
+    fetchAtlasTopPages(sqlRead),
+  ]);
 
   const canales = new Map<string, MarketingRedSocial>();
   for (const row of socialPosts) {
@@ -157,10 +174,17 @@ export async function buildMarketingSnapshot(sql?: Sql): Promise<MarketingSnapsh
     postsProgramados: estadoMap.get("PROGRAMADO") ?? 0,
     postsPublicados: estadoMap.get("PUBLICADO") ?? 0,
     seriesRedes,
-    bloqbaseNet: null, // placeholder; se sobreescribe abajo tras fetchGA4Snapshot() (el tipo no es opcional)
-    newsletter: null, // placeholder; se sobreescribe abajo tras fetchBeehiivSnapshot() (el tipo no es opcional)
-    ga4TopPages: [], // placeholder; se sobreescribe abajo tras fetchGA4TopPages()
-    atlasTopPages: [], // placeholder; se sobreescribe abajo tras fetchAtlasTopPages()
+    bloqbaseNet: ga4 ? { disponible: true, usuarios30d: ga4.usuarios30d, sesiones30d: ga4.sesiones30d } : null,
+    newsletter: beehiiv
+      ? {
+          disponible: true,
+          suscriptoresActivos: beehiiv.suscriptoresActivos,
+          averageClickRate: beehiiv.averageClickRate,
+          ultimosEnvios: beehiiv.ultimosEnvios,
+        }
+      : null,
+    ga4TopPages,
+    atlasTopPages,
   };
 
   // Agregar análisis de IA. El analizador de Atlas SEO reemplaza al genérico
@@ -168,32 +192,35 @@ export async function buildMarketingSnapshot(sql?: Sql): Promise<MarketingSnapsh
   // ver la nota en web/ai-analyzer.ts sobre esta transición.
   snapshot.aiAnalysis = analyzeAtlasSeo(snapshot);
   snapshot.redesAnalysis = analyzeRedesData(snapshot.seriesRedes);
-
-  // TODO: cuando GA4_PROPERTY_ID esté configurado en producción, esta llamada
-  // hará una petición de red real a la API de GA4 en cada carga de /marketing
-  // (página force-dynamic, sin caché). Considerar unstable_cache/revalidate
-  // si la latencia de la API resulta perceptible.
-  const ga4 = await fetchGA4Snapshot();
-  snapshot.bloqbaseNet = ga4
-    ? { disponible: true, usuarios30d: ga4.usuarios30d, sesiones30d: ga4.sesiones30d }
-    : null;
   snapshot.bloqbaseNetAnalysis = ga4
     ? analyzeBloqbaseNet(ga4, { iniciados: snapshot.formulariosIniciados30d, completados: snapshot.formulariosCompletados30d })
     : undefined;
-
-  const beehiiv = await fetchBeehiivSnapshot();
-  snapshot.newsletter = beehiiv
-    ? {
-        disponible: true,
-        suscriptoresActivos: beehiiv.suscriptoresActivos,
-        averageClickRate: beehiiv.averageClickRate,
-        ultimosEnvios: beehiiv.ultimosEnvios,
-      }
-    : null;
   snapshot.newsletterAnalysis = beehiiv ? analyzeNewsletter(beehiiv) : undefined;
 
-  snapshot.ga4TopPages = await fetchGA4TopPages();
-  snapshot.atlasTopPages = await fetchAtlasTopPages(sqlRead);
-
   return snapshot;
+}
+
+/**
+ * Envoltorio cacheado de buildMarketingSnapshotUncached(). La versión sin
+ * caché sigue exportada como función interna para que los tests puedan
+ * seguir inyectando un `sql` mock -- unstable_cache no admite bien funciones
+ * con parámetros no serializables (una conexión postgres) como parte de su
+ * clave de caché, así que el wrapper cacheado SIEMPRE usa la conexión real
+ * (sin parámetro `sql`), y solo se usa desde la página, nunca desde tests.
+ *
+ * 60s de revalidación: suficiente para que navegar entre pestañas de
+ * /marketing (Resumen, Web, Redes, Newsletter) sea instantáneo tras la
+ * primera carga, sin dejar los datos obsoletos más de un minuto.
+ */
+const getCachedMarketingSnapshot = unstable_cache(
+  () => buildMarketingSnapshotUncached(),
+  ["marketing-snapshot"],
+  { revalidate: 60 }
+);
+
+export async function buildMarketingSnapshot(sql?: Sql): Promise<MarketingSnapshot> {
+  // Con un `sql` explícito (siempre en tests), nunca se usa la caché: cada
+  // test debe reflejar exactamente lo que su mock retorna.
+  if (sql) return buildMarketingSnapshotUncached(sql);
+  return getCachedMarketingSnapshot();
 }
